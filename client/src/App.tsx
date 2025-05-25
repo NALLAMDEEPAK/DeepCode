@@ -1,21 +1,23 @@
-import React from 'react';
-
-import { useEffect, useState } from 'react';
-import axios from 'axios';
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "./contexts/themeContext";
+import Layout from "./components/Layout";
+import CodeArena from "./components/codearena/CodeArena";
+import TopicProblems from "./components/codearena/TopicProblems";
 
 function App() {
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    axios.get('http://localhost:8000/test')
-      .then(res => setMessage(res.data))
-      .catch(err => console.error(err));
-  }, []);
-
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold">Backend says: {message}</h1>
-    </div>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Navigate to="/code-arena" replace />} />
+            <Route path="/code-arena" element={<CodeArena />} />
+            <Route path="/code-arena/topic/:topic" element={<TopicProblems />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
