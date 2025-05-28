@@ -1,11 +1,10 @@
-import { Link } from "react-router-dom";
-import { Code2, Sun, Moon, LogOut, Menu } from "lucide-react";
+import { Sun, Moon, LogOut, Menu } from "lucide-react";
 import React from "react";
 import { useTheme } from "../contexts/themeContext";
 
 interface NavbarProps {
-  sidebarOpen: boolean;
-  toggleSidebar: () => void;
+  readonly sidebarOpen: boolean;
+  readonly toggleSidebar: () => void;
 }
 
 export default function Navbar({
@@ -15,7 +14,6 @@ export default function Navbar({
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <>
       <nav
         key={theme}
         className={`sticky top-0 z-10 border-l border-gray-700 transition-all duration-300 ${
@@ -69,6 +67,5 @@ export default function Navbar({
           </div>
         </div>
       </nav>
-    </>
   );
 }

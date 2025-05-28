@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Youtube, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardFooter } from "../ui/Card";
 import Badge from "../ui/Badge";
-import Button from "../ui/Button";
 import { Problem } from "../../types";
 
 interface ProblemCardProps {

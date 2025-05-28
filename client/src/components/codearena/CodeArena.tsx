@@ -1,6 +1,5 @@
 import React from "react";
-import { Link } from 'react-router-dom';
-import { Search, FileCode2, Network } from 'lucide-react';
+import { FileCode2, Network } from 'lucide-react';
 import Button from "../ui/Button";
 import Badge from "../ui/Badge";
 import { Card, CardContent } from "../ui/Card";

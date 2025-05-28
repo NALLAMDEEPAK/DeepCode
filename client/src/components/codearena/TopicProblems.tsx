@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Filter, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, SlidersHorizontal } from "lucide-react";
 import Button from "../../components/ui/Button";
 import ProblemCard from "./ProblemCard";
 import { mockProblems } from "../../data/mockData";

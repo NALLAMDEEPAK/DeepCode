@@ -2,7 +2,7 @@ import React from "react";
 import SideBarItem from "./SideBarItem";
 import { useTheme } from "../contexts/themeContext";
 
-import { BarChart, Settings, Code2, Code, Video } from "lucide-react";
+import { Settings, Code2, Code, Video } from "lucide-react";
 
 interface SideBarProps {
   isExpanded: boolean;
