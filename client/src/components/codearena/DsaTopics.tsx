@@ -74,9 +74,9 @@ const DsaTopics: React.FC<Topics> = ({ topics }) => {
                         className="bg-green-500 rounded-l"
                         style={{
                           width: `${
-                            topicProblems.length > 0
+                            (topicProblems.length > 0
                               ? (easyCount / topicProblems.length) * 100
-                              : 0
+                              : 0) * 100
                           }%`,
                         }}
                       ></div>
