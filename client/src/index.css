@@ -10,6 +10,25 @@
   --scroll-thumb: #d1d5db;
 }
 
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes fade-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+.animate-blink {
+  animation: blink 1s infinite;
+}
+
+.animate-fade-blink {
+  animation: fade-blink 1.5s ease-in-out infinite;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

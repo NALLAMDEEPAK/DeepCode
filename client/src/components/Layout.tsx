@@ -13,7 +13,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   });
   
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  console.log('isMobile:', isMobile);
 
   useEffect(() => {
     localStorage.setItem('sidebarOpen', JSON.stringify(sidebarOpen));
