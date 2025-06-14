@@ -52,20 +52,35 @@ for _ in range(q):
       input: input,
     };
 
-    function formatSubmitResponse(res: string){
+    const arr = input.split('\n').slice(1);
+    const inputs: string[] = [];
+
+    for (let i = 0; i < arr.length; i += body.inputLines) {
+      let newArr = arr.slice(i, i + body.inputLines);
+      let s:string = ""
+      for (let j = 0; j < body.inputLines-1; j++) {
+        s = s+newArr[j]+'\n';
+      }
+      s=s+newArr[body.inputLines-1];
+      inputs.push(s);
+    }
+
+    console.log(inputs)
+    function formatSubmitResponse(res: string, error: string){
         const actuals: string[] = res.split('\n');
-        const expected: string[] = ['0 1', '1 1', '0 2']
+        const expected: string[] = ['0 1', '1 2', '0 2']
         const n = expected.length;
         for(let i=0;i<n;i++){
             if (actuals[i] != expected[i]) {
                 return {
                     status: 200,
                     passed: i,
-                    failedTestCase: i+1,
                     total: n,
                     expected: expected[i],
                     actual: actuals[i],
-                    isTle: actuals[i] === 'Time Limit Exceeded'
+                    isError: true,
+                    input: inputs[i],
+                    isCompilerError: error
                 };
             }
         }
@@ -81,7 +96,7 @@ for _ in range(q):
       const response = await firstValueFrom(
         this.httpService.post(url, data, { headers })
       );
-      const res = formatSubmitResponse(response.data.output)
+      const res = formatSubmitResponse(response.data.output, response.data.error)
       return res;
     } catch (error) {
       console.error('Error executing code:', error);
