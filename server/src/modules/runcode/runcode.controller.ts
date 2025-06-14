@@ -38,9 +38,10 @@ for _ in range(q):
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
     };
-    console.log(formatted_code);
+    console.log(body.code);
+    console.log(body.input)
     const data = {
-      code: formatted_code,
+      code: body.code,
       language: body.langType,
       input: body.input,
     };
@@ -49,7 +50,7 @@ for _ in range(q):
       const response = await firstValueFrom(
         this.httpService.post(url, data, { headers })
       );
-      
+      console.log(response.data)
       return response.data;
     } catch (error) {
       console.error('Error executing code:', error);

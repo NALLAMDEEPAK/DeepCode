@@ -14,8 +14,9 @@ import axios from "axios";
 interface CodeEditorProps {
   language?: string;
   onLanguageChange?: (language: string) => void;
+  onSubmitCode?: (language: string, code: string) => void;
 }
-const CodeEditor = ({ language, onLanguageChange }: CodeEditorProps) => {
+const CodeEditor = ({ language, onLanguageChange, onSubmitCode }: CodeEditorProps) => {
   const [code, setCode] = useState(`# q = int(input())
 # for _ in range(q):
   # your code here`);
@@ -61,24 +62,6 @@ const CodeEditor = ({ language, onLanguageChange }: CodeEditorProps) => {
     });
   };
 
-  const handleSubmitCode = () => {
-    setIsLoading(true);
-    const langType = {
-      javascript: "js",
-      python: "py",
-      cpp: "cpp",
-      java: "java",
-    }[newLanguage];
-    const data = {
-      code: code,
-      langType: langType,
-      timeout: 2
-    }
-    axios.post('http://localhost:8000/submit-code', data).then(({ data: res }) => {
-      console.log(data)
-      setIsLoading(false);
-    });
-  };
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(code).then(() => {
@@ -196,7 +179,7 @@ const CodeEditor = ({ language, onLanguageChange }: CodeEditorProps) => {
           <Button
             variant="success"
             size="sm"
-            onClick={handleSubmitCode}
+            onClick={() => onSubmitCode!(newLanguage, code)}
             icon={<Play size={16} />}
           >
             Submit
