@@ -41,7 +41,7 @@ for _ in range(q):
     console.log(body.code);
     console.log(body.input)
     const data = {
-      code: body.code,
+      code: formatted_code,
       language: body.langType,
       input: body.input,
     };

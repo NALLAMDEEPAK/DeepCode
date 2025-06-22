@@ -49,6 +49,7 @@ const SideBar: React.FC<SideBarProps> = ({ isExpanded }) => {
           label="Mock Arena"
           isActive={false}
           isExpanded={isExpanded}
+          path="/mock-arena"
         />
         <SideBarItem
           icon={<Settings size={20} />}

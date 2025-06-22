@@ -1,6 +1,7 @@
 
-import { Problem } from '../types';
-export const  mockProblems: Problem[] = [
+import { Problem, Interview } from '../types';
+export const  mockProblems: Problem[] = 
+[
   {
     id: '1',
     title: 'Two Sum',
@@ -8,7 +9,6 @@ export const  mockProblems: Problem[] = [
     topics: ['Array', 'Hash Table'],
     description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
     youtubeUrl: 'https://www.youtube.com/watch?v=KLlXCFG5TnA',
-    starterCode: 'function twoSum(nums, target) {\n  // Your code here\n}',
     solutionCode: 'function twoSum(nums, target) {\n  const map = new Map();\n  \n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    \n    if (map.has(complement)) {\n      return [map.get(complement), i];\n    }\n    \n    map.set(nums[i], i);\n  }\n  \n  return [];\n}',
     solutionExplanation: 'We can use a hash map to store the numbers we\'ve seen so far and their indices. For each number, we calculate its complement (target - current number) and check if it exists in our hash map. If it does, we\'ve found our pair.',
     timeComplexity: 'O(n)',
@@ -108,5 +108,38 @@ export const  mockProblems: Problem[] = [
     topics: ['Linked List', 'Divide and Conquer', 'Heap'],
     description: 'You are given an array of k linked-lists lists, each linked-list is sorted in ascending order. Merge all the linked-lists into one sorted linked-list and return it.',
     youtubeUrl: 'https://www.youtube.com/watch?v=kpCesr9VXDA'
+  }
+];
+
+export const mockInterviews: Interview[] = [
+  {
+    id: 'interview1',
+    title: 'Data Structures Practice',
+    participant: 'Alex Johnson',
+    scheduledAt: '2025-06-15T14:00:00',
+    durationMinutes: 60,
+    description: 'Focus on arrays, linked lists, and hash tables.',
+    status: 'pending',
+    isIncoming: true
+  },
+  {
+    id: 'interview2',
+    title: 'Algorithm Challenge',
+    participant: 'Sarah Williams',
+    scheduledAt: '2025-06-21T12:16:00',
+    durationMinutes: 45,
+    description: 'Practice sorting and searching algorithms.',
+    status: 'accepted',
+    isIncoming: false
+  },
+  {
+    id: 'interview3',
+    title: 'System Design Discussion',
+    participant: 'Michael Chen',
+    scheduledAt: '2025-06-12T15:30:00',
+    durationMinutes: 90,
+    description: 'Discussion on designing a scalable web service.',
+    status: 'completed',
+    isIncoming: false
   }
 ];
