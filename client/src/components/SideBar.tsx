@@ -2,7 +2,7 @@ import React from "react";
 import SideBarItem from "./SideBarItem";
 import { useTheme } from "../contexts/themeContext";
 
-import { Settings, Code2, Code, Video } from "lucide-react";
+import { Settings, Code2, Code, Video, Users } from "lucide-react";
 
 interface SideBarProps {
   isExpanded: boolean;
@@ -40,9 +40,16 @@ const SideBar: React.FC<SideBarProps> = ({ isExpanded }) => {
         <SideBarItem
           icon={<Code size={20} />}
           label="Code Arena"
-          isActive={true}
+          isActive={window.location.pathname.includes('/code-arena')}
           isExpanded={isExpanded}
           path='/code-arena'
+        />
+        <SideBarItem
+          icon={<Users size={20} />}
+          label="Interview"
+          isActive={window.location.pathname.includes('/interview')}
+          isExpanded={isExpanded}
+          path='/interview'
         />
         <SideBarItem
           icon={<Video size={20} />}
