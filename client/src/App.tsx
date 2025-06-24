@@ -5,6 +5,7 @@ import Layout from "./components/Layout";
 import CodeArena from "./components/codearena/CodeArena";
 import TopicProblems from "./components/codearena/TopicProblems";
 import Problem from "./components/codearena/Problem";
+import InterviewDashboard from "./components/interview/InterviewDashboard";
 
 const debounce = (callback: (...args: any[]) => void, delay: number) => {
   let tid: any;
@@ -35,6 +36,7 @@ function App() {
             <Route path="/code-arena" element={<CodeArena />} />
             <Route path="/code-arena/topic/:topic" element={<TopicProblems />} />
             <Route path="/code-arena/topic/:topic/problem/:id" element={<Problem />} />
+            <Route path="/interview" element={<InterviewDashboard />} />
           </Routes>
         </Layout>
       </BrowserRouter>
