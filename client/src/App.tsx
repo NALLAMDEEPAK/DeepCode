@@ -8,6 +8,7 @@ import Problem from "./components/codearena/Problem";
 
 import MockArena from "./components/mockarena/MockArena";
 import Interview from "./components/mockarena/Interview";
+import InterviewRoom from "./components/mockarena/InterviewRoom";
 import { ProblemProvider } from "./contexts/problemsContext";
 
 const debounce = (callback: (...args: any[]) => void, delay: number) => {
@@ -33,22 +34,24 @@ function App() {
     <ThemeProvider>
       <ProblemProvider>
         <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Navigate to="/code-arena" replace />} />
-              <Route path="/code-arena" element={<CodeArena />} />
-              <Route
-                path="/code-arena/topic/:topic"
-                element={<TopicProblems />}
-              />
-              <Route
-                path="/code-arena/topic/:topic/problem/:id"
-                element={<Problem />}
-              />
-              <Route path="/mock-arena" element={<MockArena />} />
-              <Route path="/mock-arena/interview/:id" element={<Interview />} />
-            </Routes>
-          </Layout>
+          <Routes>
+            {/* Routes that use Layout */}
+            <Route path="/" element={<Layout><Navigate to="/code-arena" replace /></Layout>} />
+            <Route path="/code-arena" element={<Layout><CodeArena /></Layout>} />
+            <Route
+              path="/code-arena/topic/:topic"
+              element={<Layout><TopicProblems /></Layout>}
+            />
+            <Route
+              path="/code-arena/topic/:topic/problem/:id"
+              element={<Layout><Problem /></Layout>}
+            />
+            <Route path="/mock-arena" element={<Layout><MockArena /></Layout>} />
+            <Route path="/mock-arena/interview/:id" element={<Layout><Interview /></Layout>} />
+            
+            {/* Full-screen interview room without Layout */}
+            <Route path="/mock-arena/room/:id" element={<InterviewRoom />} />
+          </Routes>
         </BrowserRouter>
       </ProblemProvider>
     </ThemeProvider>

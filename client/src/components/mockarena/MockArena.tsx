@@ -48,7 +48,8 @@ const MockArena: React.FC = () => {
     };
 
     const handleJoinInterview = (id: string) => {
-        navigate(`/mock-arena/interview/${id}`);
+        // Navigate to the full-screen interview room
+        navigate(`/mock-arena/room/${id}`);
     };
 
     
