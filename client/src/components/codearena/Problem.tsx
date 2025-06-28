@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { mockProblems } from "../../data/mockData";
 import Button from "../ui/Button";
 import { ArrowLeft, Code2, FileText, Youtube, CheckCircle, XCircle, AlertCircle, Loader2, Clock, Target, Play } from "lucide-react";
 import Badge from "../ui/Badge";
 import { Card, CardContent } from "../ui/Card";
 import CodeEditor from "./CodeEditor";
 import axios from "axios";
+import { useProblems } from "../../contexts/problemsContext";
 
 const Problem = () => {
+  const { problems } = useProblems();
   const { topic, id } = useParams();
   const [activeTab, setActiveTab] = useState<"problem" | "solution" | "submissions">("problem");
-  const [problem, setProblem] = useState(mockProblems.find((p) => p.id === id));
+  const [problem, setProblem] = useState(problems.find((p) => p.id === id));
   const [isLoading, setIsLoading] = useState(false);
   const [compilerError, setCompilerError] = useState("");
   const [actual, setActual] = useState("");
@@ -21,7 +22,7 @@ const Problem = () => {
   const [submitStatus, setSubmitStatus] = useState<"isCompilerError" | "isRuntimeError" | "passed">("passed")
 
   useEffect(() => {
-    setProblem(mockProblems.find((p) => p.id === id));
+    setProblem(problems.find((p) => p.id === id));
   }, [id]);
 
   const difficultyVariant = problem

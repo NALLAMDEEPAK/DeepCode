@@ -1,12 +1,15 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FileCode2, Network } from 'lucide-react';
 import Button from "../ui/Button";
 import Badge from "../ui/Badge";
 import { Card, CardContent } from "../ui/Card";
 import DsaTopics from "./DsaTopics";
-import { mockProblems } from "../../data/mockData";
+import { useProblems } from "../../contexts/problemsContext";
+
 const CodeArena: React.FC = () => {
-    const topics = Array.from(new Set(mockProblems.flatMap(problem => problem.topics)));
+  const { problems } = useProblems();
+
+  const topics:string[] = Array.from(new Set(problems.flatMap((problem) => problem.topics)));
 
     const upcomingFeatures = [
     {

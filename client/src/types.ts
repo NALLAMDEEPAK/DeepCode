@@ -17,3 +17,16 @@ export interface Problem {
     }[];
     constraints?: string[];
 }
+
+export interface Interview {
+  id: string;
+  title: string;
+  participant: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  description: string;
+  status: 'pending' | 'accepted' | 'completed' | 'cancelled';
+  isIncoming: boolean;
+  topics?: string[];
+  inviteeEmail?: string;
+}

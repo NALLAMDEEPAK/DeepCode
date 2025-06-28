@@ -6,6 +6,10 @@ import CodeArena from "./components/codearena/CodeArena";
 import TopicProblems from "./components/codearena/TopicProblems";
 import Problem from "./components/codearena/Problem";
 
+import MockArena from "./components/mockarena/MockArena";
+import Interview from "./components/mockarena/Interview";
+import { ProblemProvider } from "./contexts/problemsContext";
+
 const debounce = (callback: (...args: any[]) => void, delay: number) => {
   let tid: any;
   return function (...args: any[]) {
@@ -24,20 +28,29 @@ window.ResizeObserver = class ResizeObserver extends _ResizeObserver {
   }
 };
 
-
 function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Navigate to="/code-arena" replace />} />
-            <Route path="/code-arena" element={<CodeArena />} />
-            <Route path="/code-arena/topic/:topic" element={<TopicProblems />} />
-            <Route path="/code-arena/topic/:topic/problem/:id" element={<Problem />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
+      <ProblemProvider>
+        <BrowserRouter>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Navigate to="/code-arena" replace />} />
+              <Route path="/code-arena" element={<CodeArena />} />
+              <Route
+                path="/code-arena/topic/:topic"
+                element={<TopicProblems />}
+              />
+              <Route
+                path="/code-arena/topic/:topic/problem/:id"
+                element={<Problem />}
+              />
+              <Route path="/mock-arena" element={<MockArena />} />
+              <Route path="/mock-arena/interview/:id" element={<Interview />} />
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      </ProblemProvider>
     </ThemeProvider>
   );
 }

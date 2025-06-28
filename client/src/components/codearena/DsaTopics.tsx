@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { mockProblems } from "../../data/mockData";
+
 import { Card, CardContent } from "../ui/Card";
 import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useProblems } from '../../contexts/problemsContext';
 
 interface Topics {
   topics: string[];
 }
 
 const DsaTopics: React.FC<Topics> = ({ topics }) => {
+  const { problems } = useProblems();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredTopics = topics.filter((topic) =>
@@ -36,7 +38,7 @@ const DsaTopics: React.FC<Topics> = ({ topics }) => {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTopics.map((topic) => {
-          const topicProblems = mockProblems.filter((problem) =>
+          const topicProblems = problems.filter((problem) =>
             problem.topics.includes(topic)
           );
           const easyCount = topicProblems.filter(

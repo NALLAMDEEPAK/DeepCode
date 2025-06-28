@@ -3,31 +3,33 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, SlidersHorizontal } from "lucide-react";
 import Button from "../../components/ui/Button";
 import ProblemCard from "./ProblemCard";
-import { mockProblems } from "../../data/mockData";
+import { useProblems } from "../../contexts/problemsContext";
 
 const TopicProblems: React.FC = () => {
   const { topic } = useParams<{ topic: string }>();
   const decodedTopic = topic ? decodeURIComponent(topic) : "";
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
 
-  const problems = mockProblems.filter(
+  const { problems } = useProblems();
+
+  const problemsList = problems.filter(
     (problem) =>
       problem.topics.includes(decodedTopic) &&
       (selectedDifficulty === "all" ||
         problem.difficulty === selectedDifficulty)
   );
 
-  const totalProblems = mockProblems.filter((problem) =>
+  const totalProblems = problems.filter((problem) =>
     problem.topics.includes(decodedTopic)
   ).length;
   const difficultyCount = {
-    Easy: mockProblems.filter(
+    Easy: problems.filter(
       (p) => p.topics.includes(decodedTopic) && p.difficulty === "Easy"
     ).length,
-    Medium: mockProblems.filter(
+    Medium: problems.filter(
       (p) => p.topics.includes(decodedTopic) && p.difficulty === "Medium"
     ).length,
-    Hard: mockProblems.filter(
+    Hard: problems.filter(
       (p) => p.topics.includes(decodedTopic) && p.difficulty === "Hard"
     ).length,
   };
@@ -104,14 +106,14 @@ const TopicProblems: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {problems.map((problem) => (
+        {problemsList.map((problem) => (
           <ProblemCard
             key={problem.id}
             problem={problem}
             topic={decodedTopic}
           />
         ))}
-        {problems.length === 0 && (
+        {problemsList.length === 0 && (
           <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
             No problems found for this topic.
           </div>
