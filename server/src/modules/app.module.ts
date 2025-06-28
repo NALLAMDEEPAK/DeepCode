@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import {RunCodeModule} from './runcode/runcode.module'
-import {SubmitCodeModule} from './submitcode/submitcode.module'
+import { RunCodeModule } from './runcode/runcode.module';
+import { SubmitCodeModule } from './submitcode/submitcode.module';
+import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health-check/health.controller';
@@ -9,7 +10,7 @@ import { DsaListController } from './get-dsa-list/get_dsa_list.controller';
 import { DsaListService } from './get-dsa-list/get_dsa_list.service';
 
 @Module({
-  imports: [RunCodeModule, SubmitCodeModule, DsaListModule],
+  imports: [RunCodeModule, SubmitCodeModule, DsaListModule, AuthModule],
   controllers: [AppController, HealthController, DsaListController],
   providers: [AppService, DsaListService],
 })
