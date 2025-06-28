@@ -18,7 +18,7 @@ interface CodeEditorProps {
 }
 const CodeEditor = ({ language, onLanguageChange, onSubmitCode }: CodeEditorProps) => {
   const [code, setCode] = useState(`# q = int(input())
-# for _ in rane(q):
+# for _ in range(q):
   # your code here`);
   const [newLanguage, setNewLanguage] = useState(language ?? "python");
   const [isLoading, setIsLoading] = useState(false);
@@ -115,7 +115,7 @@ const CodeEditor = ({ language, onLanguageChange, onSubmitCode }: CodeEditorProp
 
   const CodeLoader = () => {
     return (
-      <div className="flex flex-col items-center justify-center space-y-4 md:h-52 overflow-hidden">
+      <div className="flex flex-col items-center justify-center space-y-4 h-52 overflow-hidden">
         <Code2 className="w-16 h-16 text-blue-500 animate-fade-blink" />
         <div className="text-center">
           <p className="text-lg font-medium text-gray-700 mb-2">Running...</p>
@@ -136,7 +136,7 @@ const CodeEditor = ({ language, onLanguageChange, onSubmitCode }: CodeEditorProp
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full">
       <div className="flex items-center justify-between bg-gray-800 dark:bg-gray-800 text-white px-4 py-2 rounded-t-lg">
         <div className="flex items-center">
           <select
@@ -151,8 +151,42 @@ const CodeEditor = ({ language, onLanguageChange, onSubmitCode }: CodeEditorProp
             <option value="cpp">C++</option>
           </select>
         </div>
+        <div className="flex space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopyCode}
+            icon={copied ? <Check size={16} /> : <Copy size={16} />}
+            className="text-gray-300 hover:text-white"
+          >
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDownloadCode}
+            icon={<Download size={16} />}
+            className="text-gray-300 hover:text-white"
+          >
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleRunCode}
+            icon={<Play size={16} />}
+          >
+            Run
+          </Button>
+          <Button
+            variant="success"
+            size="sm"
+            onClick={() => onSubmitCode!(newLanguage, code)}
+            icon={<Play size={16} />}
+          >
+            Submit
+          </Button>
+        </div>
       </div>
-      <div className="relative h-full md:h-full rounded-b-lg">
+      <div className="relative flex-1 rounded-b-lg">
         <Editor
           height="100%"
           language={language}
@@ -165,6 +199,55 @@ const CodeEditor = ({ language, onLanguageChange, onSubmitCode }: CodeEditorProp
           }}
           onMount={handleEditorDidMount}
         />
+      </div>
+
+      <div
+        className={`mt-4 bg-gray-800 text-gray-200 font-mono text-sm p-4 rounded-lg max-h-52 ${
+          isLoading ? "overflow-hidden" : "overflow-auto"
+        }`}
+      >
+        {isLoading ? (
+          <CodeLoader />
+        ) : (
+          <div>
+            <div className="flex">
+              <p className="text-lg mb-2 bg-gray-700 rounded-lg inline-block pr-2 pl-2">
+                Test Cases
+              </p>
+              {success === "passed" ? (
+                <div className="flex items-center justify-center gap-2 mb-2 ml-4">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span className="text-sm font-medium text-green-600">
+                    Request completed successfully. Check Output below.
+                  </span>
+                </div>
+              ) : success === "failed" ? (
+                <div className="flex items-center justify-center gap-2 mb-2 ml-4">
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                  <span className="text-sm font-medium text-red-600">
+                    Request failed. Try rerunning your code.
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
+            <h1>Input: </h1>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="w-full h-28 max-h-40 bg-gray-900 text-gray-200 text-sm p-4 rounded-lg overflow-auto focus:outline-none resize-none leading-tight"
+            />
+
+            {output && success == 'passed' && (
+              <div className="mt-4">
+                <h1>Output:</h1>
+                <div className="mt-2 bg-gray-900 text-gray-200 font-mono text-sm p-4 rounded-lg overflow-auto max-h-64">
+                  <pre>{output}</pre>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
