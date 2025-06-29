@@ -8,11 +8,13 @@ import { Card, CardContent, CardHeader } from "../ui/Card";
 import InterviewForm from "./InterviewForm";
 import Badge from "../ui/Badge";
 import InterviewCard from "./InterviewCard";
+import axios from "axios";
 
 const MockArena: React.FC = () => {
     const navigate = useNavigate();
     const [interviews, setInterviews] = useState<Interview[]>(mockInterviews);
     const [showNewInterviewForm, setShowNewInterviewForm] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
         date: '',
@@ -77,40 +79,66 @@ const MockArena: React.FC = () => {
 
     const handleSendInvite = async () => {
         if (!formData.email || !formData.date || !formData.time) {
-        alert('Please fill in all required fields');
-        return;
+            alert('Please fill in all required fields');
+            return;
         }
 
-        const extractedName = formData.name || extractNameFromEmail(formData.email);
-        const scheduledDateTime = new Date(`${formData.date}T${formData.time}`);
-        
-        const newInterview: Interview = {
-        id: `interview_${Date.now()}`,
-        title: `Mock Interview - ${formData.topics || 'General'}`,
-        participant: extractedName,
-        scheduledAt: scheduledDateTime.toISOString(),
-        durationMinutes: formData.duration,
-        description: formData.description || `Mock interview focusing on ${formData.topics || 'general programming concepts'}.`,
-        status: 'pending',
-        isIncoming: false,
-        topics: formData.topics.split(',').map(t => t.trim()).filter(t => t),
-        inviteeEmail: formData.email
-        };
+        setIsLoading(true);
 
-        setInterviews([...interviews, newInterview]);
-        
-        setFormData({
-        email: '',
-        date: '',
-        time: '',
-        topics: '',
-        name: '',
-        duration: 60,
-        description: ''
-        });
-        setShowNewInterviewForm(false);
+        try {
+            const extractedName = formData.name || extractNameFromEmail(formData.email);
+            const scheduledDateTime = new Date(`${formData.date}T${formData.time}`);
+            
+            // Send email invitation via backend
+            const response = await axios.post('/interview/schedule', {
+                recipientEmail: formData.email,
+                recipientName: extractedName,
+                date: formData.date,
+                time: formData.time,
+                duration: formData.duration,
+                topics: formData.topics,
+                description: formData.description,
+            });
 
-        alert(`Interview invitation sent to ${formData.email}!\n\nInterview scheduled for ${new Date(scheduledDateTime).toLocaleString()}`);
+            if (response.data.success) {
+                // Create local interview object for UI
+                const newInterview: Interview = {
+                    id: `interview_${Date.now()}`,
+                    title: `Mock Interview - ${formData.topics || 'General'}`,
+                    participant: extractedName,
+                    scheduledAt: scheduledDateTime.toISOString(),
+                    durationMinutes: formData.duration,
+                    description: formData.description || `Mock interview focusing on ${formData.topics || 'general programming concepts'}.`,
+                    status: 'pending',
+                    isIncoming: false,
+                    topics: formData.topics.split(',').map(t => t.trim()).filter(t => t),
+                    inviteeEmail: formData.email
+                };
+
+                setInterviews([...interviews, newInterview]);
+                
+                // Reset form
+                setFormData({
+                    email: '',
+                    date: '',
+                    time: '',
+                    topics: '',
+                    name: '',
+                    duration: 60,
+                    description: ''
+                });
+                setShowNewInterviewForm(false);
+
+                alert(`✅ Interview invitation sent successfully to ${formData.email}!\n\nInterview scheduled for ${new Date(scheduledDateTime).toLocaleString()}`);
+            } else {
+                alert(`❌ Failed to send invitation: ${response.data.message}`);
+            }
+        } catch (error) {
+            console.error('Error sending interview invitation:', error);
+            alert('❌ Failed to send interview invitation. Please check your connection and try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const formatDateTime = (dateTime: string) => {
@@ -150,6 +178,7 @@ const MockArena: React.FC = () => {
                     formData={formData}
                     setFormData={setFormData}
                     handleSendInvite={handleSendInvite}
+                    isLoading={isLoading}
                  />
             </div>
             }
