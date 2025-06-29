@@ -10,9 +10,10 @@ import { DsaListController } from './get-dsa-list/get_dsa_list.controller';
 import { DsaListService } from './get-dsa-list/get_dsa_list.service';
 import { InterviewModule } from './interview/interview.module';
 import { EmailModule } from './email/email.module';
+import { UserModule } from './user/user.module';
 
 @Module({
-  imports: [RunCodeModule, SubmitCodeModule, DsaListModule, AuthModule, InterviewModule, EmailModule],
+  imports: [RunCodeModule, SubmitCodeModule, DsaListModule, AuthModule, InterviewModule, EmailModule, UserModule],
   controllers: [AppController, HealthController, DsaListController],
   providers: [AppService, DsaListService],
 })
