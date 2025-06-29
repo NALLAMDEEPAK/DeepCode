@@ -12,8 +12,7 @@ const InvitationView: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { currentInvitation, isLoading, error, loadInvitation, acceptInvitation, cancelInvitation } = useInterview();
-  const [showModal, setShowModal] = useState(false);
+  const { currentInvitation, isLoading, error, loadInvitation, cancelInvitation } = useInterview();
   const [actionLoading, setActionLoading] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelForm, setShowCancelForm] = useState(false);
@@ -22,21 +21,20 @@ const InvitationView: React.FC = () => {
     if (token) {
       loadInvitation(token);
     }
-  }, [token]);
+  }, [token, loadInvitation]);
 
   useEffect(() => {
     if (!authLoading && currentInvitation) {
       if (!isAuthenticated) {
         // Redirect to login with return URL
         navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname)}`);
-      } else {
-        setShowModal(true);
       }
     }
   }, [isAuthenticated, authLoading, currentInvitation, navigate]);
 
   const handleAccept = () => {
     if (currentInvitation) {
+      // Navigate to question selection page
       navigate(`/interview/questions/${currentInvitation.id}`);
     }
   };
@@ -47,7 +45,8 @@ const InvitationView: React.FC = () => {
     try {
       setActionLoading(true);
       await cancelInvitation(currentInvitation.id, cancelReason);
-      setShowModal(false);
+      setShowCancelForm(false);
+      // Show success message and redirect
       navigate('/mock-arena');
     } catch (error) {
       console.error('Error cancelling invitation:', error);
@@ -105,11 +104,6 @@ const InvitationView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Background overlay */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40" />
-      )}
-
       {/* Main content */}
       <div className="flex items-center justify-center min-h-screen p-4">
         <Card className="max-w-2xl w-full">

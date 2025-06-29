@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import axios from 'axios';
 
 export interface InterviewInvitation {
@@ -60,7 +60,7 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({ children }
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadInvitation = async (token: string) => {
+  const loadInvitation = useCallback(async (token: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -73,9 +73,9 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({ children }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const acceptInvitation = async (data: AcceptInvitationData) => {
+  const acceptInvitation = useCallback(async (data: AcceptInvitationData) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -102,9 +102,9 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({ children }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentInvitation]);
 
-  const cancelInvitation = async (interviewId: string, reason?: string) => {
+  const cancelInvitation = useCallback(async (interviewId: string, reason?: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -134,9 +134,9 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({ children }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentInvitation]);
 
-  const loadSession = async (sessionId: string) => {
+  const loadSession = useCallback(async (sessionId: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -149,11 +149,11 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({ children }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const clearError = () => {
+  const clearError = useCallback(() => {
     setError(null);
-  };
+  }, []);
 
   const value: InterviewContextType = {
     currentInvitation,

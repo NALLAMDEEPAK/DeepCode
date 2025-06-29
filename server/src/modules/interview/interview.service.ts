@@ -50,7 +50,7 @@ export class InterviewService {
 
   constructor(private readonly emailService: EmailService) {
     this.tursoClient = createClient({
-      url: 'libsql://dsalist-deepak135.aws-ap-south-1.turso.io',
+      url: process.env.TURSO_DATABASE_URL || 'libsql://dsalist-deepak135.aws-ap-south-1.turso.io',
       authToken: process.env.TURSO_AUTH_TOKEN ?? 
         'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiI1ZDc3YWM3Ni1hZmRlLTQ0ZWEtYTEyNC1iOTJjYzMyODA3MzgiLCJpYXQiOjE3NTA1NzMxNjQsInJpZCI6IjAwN2Y5NjUxLWZkYTktNGUwYy05OTExLWM5YmEyM2QyMGFhMSJ9.AMM6zUmyipvN1EIQEKpyqQFCgaqI7Ff9fNGD9EZvypFsODGl4AcqLGVF3YbgvuxrHO8jRGt8nZSe5ou3hw-kDQ',
     });
@@ -222,7 +222,7 @@ export class InterviewService {
       await this.tursoClient.execute({
         sql: `
           UPDATE interviews 
-          SET status = 'accepted', questions = ?, question_type = ?, updated_at = CURRENT_TIMESTAMP
+          SET status = ?, questions = ?, question_type = ?, updated_at = CURRENT_TIMESTAMP
           WHERE id = ?
         `,
         args: ['accepted', questions, acceptData.questionSelectionType, acceptData.interviewId]
@@ -314,13 +314,16 @@ export class InterviewService {
       });
 
       if (result.rows.length === 0) {
-        return null;
+        throw new NotFoundException('Invitation not found or has expired');
       }
 
       return result.rows[0] as any;
     } catch (error) {
       console.error('Error fetching invitation:', error);
-      return null;
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new NotFoundException('Invitation not found or has expired');
     }
   }
 
@@ -333,21 +336,54 @@ export class InterviewService {
         title: 'Two Sum Variation',
         difficulty: 'Medium',
         description: 'Given an array of integers and a target sum, find all unique pairs that sum to the target.',
-        topics: topics.length > 0 ? topics : ['Array', 'Hash Table']
+        topics: topics.length > 0 ? topics : ['Array', 'Hash Table'],
+        examples: [
+          {
+            input: 'nums = [2,7,11,15], target = 9',
+            output: '[[2,7]]',
+            explanation: 'The pair [2,7] sums to 9'
+          }
+        ],
+        constraints: [
+          '2 <= nums.length <= 10^4',
+          '-10^9 <= nums[i] <= 10^9'
+        ]
       },
       {
         id: 'ai_2',
         title: 'Binary Tree Traversal',
         difficulty: 'Medium',
         description: 'Implement in-order traversal of a binary tree without using recursion.',
-        topics: topics.length > 0 ? topics : ['Tree', 'Stack']
+        topics: topics.length > 0 ? topics : ['Tree', 'Stack'],
+        examples: [
+          {
+            input: 'root = [1,null,2,3]',
+            output: '[1,3,2]',
+            explanation: 'In-order traversal visits nodes in left-root-right order'
+          }
+        ],
+        constraints: [
+          'The number of nodes in the tree is in the range [0, 100]',
+          '-100 <= Node.val <= 100'
+        ]
       },
       {
         id: 'ai_3',
         title: 'Dynamic Programming Challenge',
         difficulty: 'Hard',
         description: 'Find the longest increasing subsequence in an array.',
-        topics: topics.length > 0 ? topics : ['Dynamic Programming', 'Array']
+        topics: topics.length > 0 ? topics : ['Dynamic Programming', 'Array'],
+        examples: [
+          {
+            input: 'nums = [10,9,2,5,3,7,101,18]',
+            output: '4',
+            explanation: 'The longest increasing subsequence is [2,3,7,18], therefore the length is 4'
+          }
+        ],
+        constraints: [
+          '1 <= nums.length <= 2500',
+          '-10^4 <= nums[i] <= 10^4'
+        ]
       }
     ];
 
