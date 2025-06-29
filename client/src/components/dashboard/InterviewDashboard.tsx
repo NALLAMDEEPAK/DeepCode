@@ -1,51 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Video, CheckCircle, XCircle, AlertCircle, Play } from 'lucide-react';
+import { Calendar, Clock, User, Video, CheckCircle, XCircle, AlertCircle, Play, RefreshCw, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../contexts/authContext';
+import { useInterview } from '../../contexts/interviewContext';
 import Button from '../ui/Button';
-import { Card, CardContent, CardHeader } from '../ui/Card';
+import { Card, CardContent } from '../ui/Card';
 import Badge from '../ui/Badge';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-interface InterviewData {
-  id: string;
-  interviewer_email: string;
-  interviewer_name: string;
-  participant_email: string;
-  participant_name: string;
-  scheduled_at: string;
-  duration_minutes: number;
-  topics: string;
-  description?: string;
-  status: 'pending' | 'accepted' | 'cancelled' | 'completed';
-  session_id?: string;
-  session_status?: 'pending' | 'active' | 'completed' | 'cancelled';
-  isInterviewer: boolean;
-  isParticipant: boolean;
-}
+type SortOrder = 'newest' | 'oldest';
 
 const InterviewDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [interviews, setInterviews] = useState<InterviewData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { interviews, isLoading, loadUserInterviews, refreshInterviews } = useInterview();
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed' | 'cancelled'>('all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
 
   useEffect(() => {
-    fetchInterviews();
-  }, []);
-
-  const fetchInterviews = async () => {
-    try {
-      setIsLoading(true);
-      const response = await axios.get('/interview/my-interviews');
-      setInterviews(response.data);
-    } catch (error) {
-      console.error('Error fetching interviews:', error);
-    } finally {
-      setIsLoading(false);
+    // Load interviews only if not already loaded
+    if (interviews.length === 0) {
+      loadUserInterviews();
     }
-  };
+  }, [interviews.length, loadUserInterviews]);
 
   const formatDateTime = (dateTime: string) => {
     const date = new Date(dateTime);
@@ -100,7 +77,19 @@ const InterviewDashboard: React.FC = () => {
     navigate(`/mock-arena/room/${interviewId}`);
   };
 
-  const filteredInterviews = interviews.filter(interview => {
+  const handleRefresh = async () => {
+    await refreshInterviews();
+  };
+
+  // Sort interviews by scheduled time
+  const sortedInterviews = [...interviews].sort((a, b) => {
+    const dateA = new Date(a.scheduled_at).getTime();
+    const dateB = new Date(b.scheduled_at).getTime();
+    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+  });
+
+  // Filter interviews
+  const filteredInterviews = sortedInterviews.filter(interview => {
     if (filter === 'all') return true;
     if (filter === 'upcoming') return interview.status === 'accepted' && new Date(interview.scheduled_at) > new Date();
     if (filter === 'completed') return interview.status === 'completed';
@@ -114,10 +103,13 @@ const InterviewDashboard: React.FC = () => {
 
   const pendingInterviews = interviews.filter(interview => interview.status === 'pending');
 
-  if (isLoading) {
+  if (isLoading && interviews.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading interviews...</p>
+        </div>
       </div>
     );
   }
@@ -134,6 +126,14 @@ const InterviewDashboard: React.FC = () => {
             Manage your scheduled interviews and sessions
           </p>
         </div>
+        <Button
+          onClick={handleRefresh}
+          variant="outline"
+          icon={<RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />}
+          disabled={isLoading}
+        >
+          Refresh
+        </Button>
       </div>
 
       {/* Quick Stats */}
@@ -189,23 +189,64 @@ const InterviewDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex space-x-2">
-        {[
-          { key: 'all', label: 'All Interviews' },
-          { key: 'upcoming', label: 'Upcoming' },
-          { key: 'completed', label: 'Completed' },
-          { key: 'cancelled', label: 'Cancelled' }
-        ].map(({ key, label }) => (
+      {/* Filters and Sorting */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex space-x-2">
+          {[
+            { key: 'all', label: 'All Interviews' },
+            { key: 'upcoming', label: 'Upcoming' },
+            { key: 'completed', label: 'Completed' },
+            { key: 'cancelled', label: 'Cancelled' }
+          ].map(({ key, label }) => (
+            <Button
+              key={key}
+              variant={filter === key ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setFilter(key as any)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Sort Dropdown */}
+        <div className="relative">
           <Button
-            key={key}
-            variant={filter === key ? 'primary' : 'outline'}
+            variant="outline"
             size="sm"
-            onClick={() => setFilter(key as any)}
+            onClick={() => setShowSortDropdown(!showSortDropdown)}
+            icon={<ChevronDown size={16} />}
           >
-            {label}
+            Sort: {sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
           </Button>
-        ))}
+          
+          {showSortDropdown && (
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setSortOrder('newest');
+                  setShowSortDropdown(false);
+                }}
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                  sortOrder === 'newest' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Newest First
+              </button>
+              <button
+                onClick={() => {
+                  setSortOrder('oldest');
+                  setShowSortDropdown(false);
+                }}
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                  sortOrder === 'oldest' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Oldest First
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Interviews List */}
@@ -298,17 +339,6 @@ const InterviewDashboard: React.FC = () => {
                           Join Interview
                         </Button>
                       )}
-                      
-                      {interview.status === 'accepted' && !canJoin && !isPast && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleJoinInterview(interview.id)}
-                          icon={<Video size={16} />}
-                        >
-                          View Room
-                        </Button>
-                      )}
 
                       {interview.status === 'completed' && (
                         <Button
@@ -327,6 +357,14 @@ const InterviewDashboard: React.FC = () => {
           })
         )}
       </div>
+
+      {/* Overlay for sort dropdown */}
+      {showSortDropdown && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowSortDropdown(false)}
+        />
+      )}
     </div>
   );
 };

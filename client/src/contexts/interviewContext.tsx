@@ -19,16 +19,25 @@ export interface InterviewInvitation {
 
 export interface InterviewSession {
   id: string;
-  questions: any[];
-  participants: string[];
-  status: string;
-  startTime?: string;
-  endTime?: string;
+  interview_id: string;
+  interviewer_email: string;
+  interviewer_name: string;
+  participant_email: string;
+  participant_name: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  topics: string;
+  description?: string;
+  status: 'pending' | 'accepted' | 'cancelled' | 'completed';
+  session_status?: 'pending' | 'active' | 'completed' | 'cancelled';
+  isInterviewer: boolean;
+  isParticipant: boolean;
 }
 
 interface InterviewContextType {
   currentInvitation: InterviewInvitation | null;
   currentSession: InterviewSession | null;
+  interviews: InterviewSession[];
   isLoading: boolean;
   error: string | null;
   
@@ -37,6 +46,8 @@ interface InterviewContextType {
   acceptInvitation: (data: AcceptInvitationData) => Promise<void>;
   cancelInvitation: (interviewId: string, reason?: string) => Promise<void>;
   loadSession: (sessionId: string) => Promise<void>;
+  loadUserInterviews: () => Promise<void>;
+  refreshInterviews: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -57,6 +68,7 @@ interface InterviewProviderProps {
 export const InterviewProvider: React.FC<InterviewProviderProps> = ({ children }) => {
   const [currentInvitation, setCurrentInvitation] = useState<InterviewInvitation | null>(null);
   const [currentSession, setCurrentSession] = useState<InterviewSession | null>(null);
+  const [interviews, setInterviews] = useState<InterviewSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -151,6 +163,25 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({ children }
     }
   }, []);
 
+  const loadUserInterviews = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await axios.get('/interview/my-interviews');
+      setInterviews(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load interviews');
+      console.error('Error loading interviews:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const refreshInterviews = useCallback(async () => {
+    await loadUserInterviews();
+  }, [loadUserInterviews]);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -158,12 +189,15 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({ children }
   const value: InterviewContextType = {
     currentInvitation,
     currentSession,
+    interviews,
     isLoading,
     error,
     loadInvitation,
     acceptInvitation,
     cancelInvitation,
     loadSession,
+    loadUserInterviews,
+    refreshInterviews,
     clearError,
   };
 
