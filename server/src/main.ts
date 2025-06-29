@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './modules/app.module';
 import * as cookieParser from 'cookie-parser';
 
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
@@ -12,7 +13,6 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3000', // Development
-      'https://my-production-client.com', // Production (replace with your actual domain)
     ],
     credentials: true, // Allow cookies to be sent
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -20,6 +20,7 @@ async function bootstrap() {
   });
   
   await app.listen(process.env.PORT || 8000);
+
   console.log(`🚀 Server running on http://localhost:${process.env.PORT || 8000}`);
 }
 bootstrap();
