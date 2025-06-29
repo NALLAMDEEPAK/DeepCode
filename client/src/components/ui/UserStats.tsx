@@ -83,7 +83,7 @@ const UserStats: React.FC = () => {
   const progressPercentage = totalProblems > 0 ? (stats.totalSolved / totalProblems) * 100 : 0;
   
   // Calculate stroke dash array for circular progress
-  const radius = 45;
+  const radius = 50;
   const circumference = 2 * Math.PI * radius;
   const strokeDasharray = circumference;
   const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
@@ -92,49 +92,74 @@ const UserStats: React.FC = () => {
     <div className="p-4 bg-gray-800 dark:bg-gray-900 rounded-lg">
       {/* Circular Progress */}
       <div className="relative flex items-center justify-center mb-4">
-        <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+        <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
           {/* Background circle */}
           <circle
-            cx="50"
-            cy="50"
+            cx="60"
+            cy="60"
             r={radius}
-            stroke="currentColor"
-            strokeWidth="8"
+            stroke="#374151"
+            strokeWidth="6"
             fill="transparent"
-            className="text-gray-700 dark:text-gray-600"
+            className="opacity-30"
           />
-          {/* Progress circle */}
+          
+          {/* Progress segments */}
+          {/* Easy segment (green) */}
           <circle
-            cx="50"
-            cy="50"
+            cx="60"
+            cy="60"
             r={radius}
-            stroke="url(#gradient)"
-            strokeWidth="8"
+            stroke="#10b981"
+            strokeWidth="6"
             fill="transparent"
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
+            strokeDasharray={`${(stats.easy / totalProblems) * circumference} ${circumference}`}
+            strokeDashoffset="0"
             strokeLinecap="round"
-            className="transition-all duration-300 ease-in-out"
+            className="transition-all duration-500 ease-in-out"
+            transform="rotate(-90 60 60)"
           />
-          {/* Gradient definition */}
-          <defs>
-            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#fbbf24" />
-              <stop offset="50%" stopColor="#10b981" />
-              <stop offset="100%" stopColor="#ef4444" />
-            </linearGradient>
-          </defs>
+          
+          {/* Medium segment (yellow) */}
+          <circle
+            cx="60"
+            cy="60"
+            r={radius}
+            stroke="#f59e0b"
+            strokeWidth="6"
+            fill="transparent"
+            strokeDasharray={`${(stats.medium / totalProblems) * circumference} ${circumference}`}
+            strokeDashoffset={`-${(stats.easy / totalProblems) * circumference}`}
+            strokeLinecap="round"
+            className="transition-all duration-500 ease-in-out"
+            transform="rotate(-90 60 60)"
+          />
+          
+          {/* Hard segment (red) */}
+          <circle
+            cx="60"
+            cy="60"
+            r={radius}
+            stroke="#ef4444"
+            strokeWidth="6"
+            fill="transparent"
+            strokeDasharray={`${(stats.hard / totalProblems) * circumference} ${circumference}`}
+            strokeDashoffset={`-${((stats.easy + stats.medium) / totalProblems) * circumference}`}
+            strokeLinecap="round"
+            className="transition-all duration-500 ease-in-out"
+            transform="rotate(-90 60 60)"
+          />
         </svg>
         
         {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-2xl font-bold text-white">
+          <div className="text-3xl font-bold text-white">
             {stats.totalSolved}
           </div>
-          <div className="text-xs text-gray-400">
+          <div className="text-sm text-gray-400">
             /{totalProblems}
           </div>
-          <div className="text-xs text-green-400 flex items-center">
+          <div className="text-xs text-green-400 flex items-center mt-1">
             <span className="mr-1">✓</span>
             Solved
           </div>
@@ -143,44 +168,35 @@ const UserStats: React.FC = () => {
 
       {/* Attempting indicator */}
       <div className="text-center mb-4">
-        <span className="text-xs text-gray-400">
+        <span className="text-sm text-gray-400">
           {stats.attempting} Attempting
         </span>
       </div>
 
       {/* Difficulty breakdown */}
-      <div className="space-y-2">
+      <div className="grid grid-cols-3 gap-3">
         {/* Easy */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-sm mr-2"></div>
-            <span className="text-sm text-green-400">Easy</span>
-          </div>
-          <span className="text-sm text-white font-medium">
+        <div className="bg-gray-700 dark:bg-gray-800 rounded-lg p-3 text-center">
+          <div className="text-green-400 text-sm font-medium mb-1">Easy</div>
+          <div className="text-white font-bold">
             {stats.easy}/{totalEasy}
-          </span>
+          </div>
         </div>
 
         {/* Medium */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-yellow-500 rounded-sm mr-2"></div>
-            <span className="text-sm text-yellow-400">Med.</span>
-          </div>
-          <span className="text-sm text-white font-medium">
+        <div className="bg-gray-700 dark:bg-gray-800 rounded-lg p-3 text-center">
+          <div className="text-yellow-400 text-sm font-medium mb-1">Med.</div>
+          <div className="text-white font-bold">
             {stats.medium}/{totalMedium}
-          </span>
+          </div>
         </div>
 
         {/* Hard */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-red-500 rounded-sm mr-2"></div>
-            <span className="text-sm text-red-400">Hard</span>
-          </div>
-          <span className="text-sm text-white font-medium">
+        <div className="bg-gray-700 dark:bg-gray-800 rounded-lg p-3 text-center">
+          <div className="text-red-400 text-sm font-medium mb-1">Hard</div>
+          <div className="text-white font-bold">
             {stats.hard}/{totalHard}
-          </span>
+          </div>
         </div>
       </div>
     </div>
