@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Search, Brain, List, CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { Search, Brain, List, CheckCircle, ArrowRight, Sparkles, Calendar, Clock } from 'lucide-react';
 import { useInterview } from '../../contexts/interviewContext';
 import { useProblems } from '../../contexts/problemsContext';
 import Button from '../ui/Button';
@@ -22,6 +22,7 @@ const QuestionSelection: React.FC = () => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiTopics, setAiTopics] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Get unique topics from problems
   const allTopics = Array.from(new Set(problems.flatMap(p => p.topics)));
@@ -67,13 +68,37 @@ const QuestionSelection: React.FC = () => {
         )
       };
 
-      await acceptInvitation(acceptData);
-      navigate(`/mock-arena/room/${interviewId}`);
+      const result = await acceptInvitation(acceptData);
+      
+      if (result.success) {
+        setShowConfirmation(true);
+      }
     } catch (error) {
       console.error('Error accepting invitation:', error);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleConfirmationClose = () => {
+    setShowConfirmation(false);
+    navigate('/mock-arena');
+  };
+
+  const formatDateTime = (dateTime: string) => {
+    const date = new Date(dateTime);
+    return {
+      date: date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      time: date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    };
   };
 
   if (isLoading) {
@@ -95,6 +120,8 @@ const QuestionSelection: React.FC = () => {
     );
   }
 
+  const { date, time } = formatDateTime(currentInvitation.scheduled_at);
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       {/* Header */}
@@ -106,6 +133,20 @@ const QuestionSelection: React.FC = () => {
           Choose how you'd like to prepare questions for your interview with{' '}
           <span className="font-semibold">{currentInvitation.interviewer_name}</span>
         </p>
+        
+        {/* Interview Details Summary */}
+        <div className="mt-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 inline-block">
+          <div className="flex items-center space-x-6 text-sm">
+            <div className="flex items-center">
+              <Calendar className="w-4 h-4 text-indigo-600 mr-2" />
+              <span className="text-indigo-800 dark:text-indigo-300">{date}</span>
+            </div>
+            <div className="flex items-center">
+              <Clock className="w-4 h-4 text-indigo-600 mr-2" />
+              <span className="text-indigo-800 dark:text-indigo-300">{time}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Selection Type */}
@@ -376,6 +417,39 @@ const QuestionSelection: React.FC = () => {
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   Generate Questions & Accept Invitation
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full">
+            <CardContent className="p-6 text-center">
+              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Questions Successfully Added!
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Your interview questions have been prepared and saved. You can now leave the platform until your scheduled interview time.
+              </p>
+              <div className="space-y-3">
+                <Button
+                  onClick={handleConfirmationClose}
+                  variant="primary"
+                  className="w-full"
+                >
+                  Return to Dashboard
+                </Button>
+                <Button
+                  onClick={() => navigate(`/mock-arena/room/${interviewId}`)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Go to Interview Room
                 </Button>
               </div>
             </CardContent>

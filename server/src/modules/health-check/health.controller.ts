@@ -21,18 +21,24 @@ export class HealthController {
       // Test database connection
       await this.tursoClient.execute('SELECT 1');
       
-      // Test interview table
+      // Test interview tables
       const interviewCount = await this.tursoClient.execute('SELECT COUNT(*) as count FROM interviews');
+      const sessionCount = await this.tursoClient.execute('SELECT COUNT(*) as count FROM interview_sessions');
+      const questionCount = await this.tursoClient.execute('SELECT COUNT(*) as count FROM interview_questions');
       
       return {
         status: 'ok',
         timestamp,
         services: {
           database: 'connected',
-          interviews: 'available'
+          interviews: 'available',
+          sessions: 'available',
+          questions: 'available'
         },
         stats: {
-          totalInterviews: interviewCount.rows[0]?.count || 0
+          totalInterviews: interviewCount.rows[0]?.count || 0,
+          totalSessions: sessionCount.rows[0]?.count || 0,
+          totalQuestions: questionCount.rows[0]?.count || 0
         }
       };
     } catch (error) {
@@ -42,7 +48,9 @@ export class HealthController {
         timestamp,
         services: {
           database: 'disconnected',
-          interviews: 'unavailable'
+          interviews: 'unavailable',
+          sessions: 'unavailable',
+          questions: 'unavailable'
         },
         error: error.message
       };

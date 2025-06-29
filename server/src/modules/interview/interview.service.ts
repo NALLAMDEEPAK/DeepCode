@@ -44,6 +44,25 @@ export interface InterviewRecord {
   updated_at: string;
 }
 
+export interface InterviewSession {
+  id: string;
+  interview_id: string;
+  interviewer_email: string;
+  candidate_email: string;
+  scheduled_time: string;
+  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InterviewQuestion {
+  id: string;
+  interview_id: string;
+  questions: string;
+  question_type: 'dsa' | 'ai';
+  created_at: string;
+}
+
 @Injectable()
 export class InterviewService {
   private readonly tursoClient;
@@ -59,6 +78,7 @@ export class InterviewService {
 
   private async initializeDatabase() {
     try {
+      // Create interviews table
       await this.tursoClient.execute(`
         CREATE TABLE IF NOT EXISTS interviews (
           id TEXT PRIMARY KEY,
@@ -71,16 +91,42 @@ export class InterviewService {
           topics TEXT,
           description TEXT,
           status TEXT DEFAULT 'pending',
-          questions TEXT,
-          question_type TEXT,
           invitation_token TEXT UNIQUE NOT NULL,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      console.log('✅ Interview table initialized successfully');
+
+      // Create interview_questions table
+      await this.tursoClient.execute(`
+        CREATE TABLE IF NOT EXISTS interview_questions (
+          id TEXT PRIMARY KEY,
+          interview_id TEXT NOT NULL,
+          questions TEXT NOT NULL,
+          question_type TEXT NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (interview_id) REFERENCES interviews (id)
+        )
+      `);
+
+      // Create interview_sessions table
+      await this.tursoClient.execute(`
+        CREATE TABLE IF NOT EXISTS interview_sessions (
+          id TEXT PRIMARY KEY,
+          interview_id TEXT NOT NULL,
+          interviewer_email TEXT NOT NULL,
+          candidate_email TEXT NOT NULL,
+          scheduled_time TEXT NOT NULL,
+          status TEXT DEFAULT 'pending',
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (interview_id) REFERENCES interviews (id)
+        )
+      `);
+
+      console.log('✅ All interview tables initialized successfully');
     } catch (error) {
-      console.error('❌ Failed to initialize interview table:', error);
+      console.error('❌ Failed to initialize interview tables:', error);
     }
   }
 
@@ -218,14 +264,41 @@ export class InterviewService {
         });
       }
 
-      // Update interview status and questions
+      // Update interview status
       await this.tursoClient.execute({
         sql: `
           UPDATE interviews 
-          SET status = ?, questions = ?, question_type = ?, updated_at = CURRENT_TIMESTAMP
+          SET status = ?, updated_at = CURRENT_TIMESTAMP
           WHERE id = ?
         `,
-        args: ['accepted', questions, acceptData.questionSelectionType, acceptData.interviewId]
+        args: ['accepted', acceptData.interviewId]
+      });
+
+      // Store questions in interview_questions table
+      const questionId = uuidv4();
+      await this.tursoClient.execute({
+        sql: `
+          INSERT INTO interview_questions (id, interview_id, questions, question_type)
+          VALUES (?, ?, ?, ?)
+        `,
+        args: [questionId, acceptData.interviewId, questions, acceptData.questionSelectionType]
+      });
+
+      // Create interview session
+      const sessionId = uuidv4();
+      await this.tursoClient.execute({
+        sql: `
+          INSERT INTO interview_sessions (
+            id, interview_id, interviewer_email, candidate_email, scheduled_time
+          ) VALUES (?, ?, ?, ?, ?)
+        `,
+        args: [
+          sessionId,
+          acceptData.interviewId,
+          interview.interviewer_email,
+          user.email,
+          interview.scheduled_at
+        ]
       });
 
       // Send confirmation email to interviewer
@@ -242,7 +315,8 @@ export class InterviewService {
         success: true,
         message: 'Interview invitation accepted successfully',
         interviewId: acceptData.interviewId,
-        redirectUrl: `/mock-arena/room/${acceptData.interviewId}`
+        sessionId,
+        questionsAdded: true
       };
     } catch (error) {
       console.error('Error accepting invitation:', error);
@@ -264,6 +338,16 @@ export class InterviewService {
           UPDATE interviews 
           SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
           WHERE id = ?
+        `,
+        args: [cancelData.interviewId]
+      });
+
+      // Update any existing session
+      await this.tursoClient.execute({
+        sql: `
+          UPDATE interview_sessions 
+          SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+          WHERE interview_id = ?
         `,
         args: [cancelData.interviewId]
       });
@@ -324,6 +408,102 @@ export class InterviewService {
         throw error;
       }
       throw new NotFoundException('Invitation not found or has expired');
+    }
+  }
+
+  async getUserInterviews(userEmail: string): Promise<any[]> {
+    try {
+      const result = await this.tursoClient.execute({
+        sql: `
+          SELECT 
+            i.*,
+            s.id as session_id,
+            s.status as session_status
+          FROM interviews i
+          LEFT JOIN interview_sessions s ON i.id = s.interview_id
+          WHERE i.interviewer_email = ? OR i.participant_email = ?
+          ORDER BY i.scheduled_at DESC
+        `,
+        args: [userEmail, userEmail]
+      });
+
+      return result.rows.map((row: any) => ({
+        ...row,
+        isInterviewer: row.interviewer_email === userEmail,
+        isParticipant: row.participant_email === userEmail
+      }));
+    } catch (error) {
+      console.error('Error fetching user interviews:', error);
+      return [];
+    }
+  }
+
+  async getInterviewQuestions(interviewId: string): Promise<any> {
+    try {
+      const result = await this.tursoClient.execute({
+        sql: 'SELECT * FROM interview_questions WHERE interview_id = ?',
+        args: [interviewId]
+      });
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const questionData = result.rows[0] as any;
+      return {
+        ...questionData,
+        questions: JSON.parse(questionData.questions)
+      };
+    } catch (error) {
+      console.error('Error fetching interview questions:', error);
+      return null;
+    }
+  }
+
+  async getInterviewSession(interviewId: string): Promise<any> {
+    try {
+      const result = await this.tursoClient.execute({
+        sql: `
+          SELECT 
+            s.*,
+            i.interviewer_name,
+            i.participant_name,
+            i.topics,
+            i.duration_minutes,
+            i.description
+          FROM interview_sessions s
+          JOIN interviews i ON s.interview_id = i.id
+          WHERE s.interview_id = ?
+        `,
+        args: [interviewId]
+      });
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error fetching interview session:', error);
+      return null;
+    }
+  }
+
+  async updateSessionStatus(interviewId: string, status: string) {
+    try {
+      await this.tursoClient.execute({
+        sql: `
+          UPDATE interview_sessions 
+          SET status = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE interview_id = ?
+        `,
+        args: [status, interviewId]
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating session status:', error);
+      throw error;
     }
   }
 

@@ -203,14 +203,14 @@ const InvitationView: React.FC = () => {
                         onClick={handleAccept}
                         icon={<CheckCircle size={16} />}
                       >
-                        Accept Invitation
+                        Accept Interview
                       </Button>
                       <Button
                         variant="danger"
                         onClick={() => setShowCancelForm(true)}
                         icon={<XCircle size={16} />}
                       >
-                        Decline
+                        Cancel
                       </Button>
                     </div>
                   </div>
@@ -254,12 +254,12 @@ const InvitationView: React.FC = () => {
           <Card className="max-w-md w-full">
             <CardHeader>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Decline Invitation
+                Cancel Invitation
               </h3>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-gray-600 dark:text-gray-400">
-                Please let the interviewer know why you're declining this invitation (optional):
+                Please let the interviewer know why you're cancelling this invitation (optional):
               </p>
               <textarea
                 value={cancelReason}
@@ -275,14 +275,14 @@ const InvitationView: React.FC = () => {
                   isLoading={actionLoading}
                   className="flex-1"
                 >
-                  Decline Invitation
+                  Cancel Invitation
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setShowCancelForm(false)}
                   className="flex-1"
                 >
-                  Cancel
+                  Keep Invitation
                 </Button>
               </div>
             </CardContent>

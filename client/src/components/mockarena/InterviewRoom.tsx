@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Code2, Play, FileText, CheckCircle, XCircle, AlertCircle, Loader2, Clock, Target } from "lucide-react";
+import { ArrowLeft, Code2, Play, FileText, CheckCircle, XCircle, AlertCircle, Loader2, Clock, Target, Users } from "lucide-react";
 import Button from "../ui/Button";
 import Badge from "../ui/Badge";
 import { Card, CardContent } from "../ui/Card";
@@ -16,10 +16,68 @@ const InterviewRoom: React.FC = () => {
   const [testResults, setTestResults] = useState<any>(null);
   const [currentCode, setCurrentCode] = useState("");
   const [currentLanguage, setCurrentLanguage] = useState("python");
+  const [interviewQuestions, setInterviewQuestions] = useState<any>(null);
+  const [interviewSession, setInterviewSession] = useState<any>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
-  // For demo purposes, using the first problem. In real implementation, 
-  // you'd fetch the specific problem for this interview
-  const problem = problems.find(p => p.id === '1') || problems[0];
+  useEffect(() => {
+    if (id) {
+      loadInterviewData();
+    }
+  }, [id]);
+
+  const loadInterviewData = async () => {
+    try {
+      setSessionLoading(true);
+      
+      // Load interview questions
+      const questionsResponse = await axios.get(`/interview/${id}/questions`);
+      setInterviewQuestions(questionsResponse.data);
+      
+      // Load interview session details
+      const sessionResponse = await axios.get(`/interview/${id}/session`);
+      setInterviewSession(sessionResponse.data);
+      
+      // Update session status to active
+      await axios.put(`/interview/${id}/session/status`, { status: 'active' });
+      
+    } catch (error) {
+      console.error('Error loading interview data:', error);
+    } finally {
+      setSessionLoading(false);
+    }
+  };
+
+  const getCurrentQuestion = () => {
+    if (!interviewQuestions) return null;
+    
+    const questions = interviewQuestions.questions;
+    
+    if (questions.type === 'dsa') {
+      // Find the problem from the DSA list
+      const questionId = questions.questionIds[currentQuestionIndex];
+      return problems.find(p => p.id === questionId);
+    } else if (questions.type === 'ai') {
+      // Return AI-generated question
+      return questions.questions[currentQuestionIndex];
+    }
+    
+    return null;
+  };
+
+  const getTotalQuestions = () => {
+    if (!interviewQuestions) return 0;
+    
+    const questions = interviewQuestions.questions;
+    if (questions.type === 'dsa') {
+      return questions.questionIds.length;
+    } else if (questions.type === 'ai') {
+      return questions.questions.length;
+    }
+    
+    return 0;
+  };
 
   const handleCodeChange = (code: string) => {
     setCurrentCode(code);
@@ -48,7 +106,7 @@ const InterviewRoom: React.FC = () => {
         inputLines: 2
       };
 
-      const response = await axios.post('http://localhost:8000/submit-code', data);
+      const response = await axios.post('/submit-code', data);
       setTestResults(response.data);
     } catch (error) {
       console.error('Error running code:', error);
@@ -58,6 +116,24 @@ const InterviewRoom: React.FC = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < getTotalQuestions() - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentCode("");
+      setTestResults(null);
+      setActiveView("code");
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      setCurrentCode("");
+      setTestResults(null);
+      setActiveView("code");
     }
   };
 
@@ -233,7 +309,7 @@ const InterviewRoom: React.FC = () => {
               </span>
             </div>
             <p className="text-center text-lg font-bold text-blue-600 dark:text-blue-400">
-              &lt;1s
+              <1s
             </p>
           </div>
           
@@ -253,12 +329,44 @@ const InterviewRoom: React.FC = () => {
     );
   };
 
-  const difficultyVariant = problem
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading interview session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentQuestion = getCurrentQuestion();
+  const totalQuestions = getTotalQuestions();
+
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold mb-4">No Questions Available</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              This interview session doesn't have any questions configured.
+            </p>
+            <Button onClick={() => window.history.back()}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const difficultyVariant = currentQuestion
     ? ({
         Easy: "success",
         Medium: "warning",
         Hard: "danger",
-      }[problem.difficulty] as "success" | "warning" | "danger")
+      }[currentQuestion.difficulty] as "success" | "warning" | "danger")
     : undefined;
 
   return (
@@ -277,17 +385,21 @@ const InterviewRoom: React.FC = () => {
                 Mock Interview Room
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Interview ID: {id}
+                {interviewSession?.interviewer_name} & {interviewSession?.candidate_email}
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
+              <Users className="w-4 h-4 text-green-500" />
+              <span className="text-sm text-gray-600 dark:text-gray-400">2 participants</span>
+            </div>
+            <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-sm text-gray-600 dark:text-gray-400">Live</span>
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              45:30 remaining
+              Question {currentQuestionIndex + 1} of {totalQuestions}
             </div>
           </div>
         </div>
@@ -299,10 +411,30 @@ const InterviewRoom: React.FC = () => {
         <div className="lg:w-1/2 flex flex-col overflow-hidden">
           <Card className="flex flex-col flex-1 m-4 overflow-hidden">
             <div className="border-b border-gray-200 dark:border-gray-700">
-              <div className="flex">
-                <div className="flex items-center px-4 py-3 text-sm font-medium border-b-2 border-indigo-600 text-indigo-600">
-                  <FileText size={16} className="mr-2" />
-                  Problem
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center">
+                  <div className="flex items-center px-4 py-3 text-sm font-medium border-b-2 border-indigo-600 text-indigo-600">
+                    <FileText size={16} className="mr-2" />
+                    Problem
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviousQuestion}
+                    disabled={currentQuestionIndex === 0}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextQuestion}
+                    disabled={currentQuestionIndex === totalQuestions - 1}
+                  >
+                    Next
+                  </Button>
                 </div>
               </div>
             </div>
@@ -311,17 +443,17 @@ const InterviewRoom: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {problem?.title}
+                    {currentQuestion?.title}
                   </h2>
-                  {problem && (
+                  {currentQuestion && (
                     <Badge variant={difficultyVariant}>
-                      {problem.difficulty}
+                      {currentQuestion.difficulty}
                     </Badge>
                   )}
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {problem?.topics.map((topic) => (
+                  {currentQuestion?.topics?.map((topic) => (
                     <Badge key={topic} variant="primary" size="sm">
                       {topic}
                     </Badge>
@@ -332,13 +464,13 @@ const InterviewRoom: React.FC = () => {
                   <h3 className="text-lg font-semibold mb-4">
                     Problem Statement
                   </h3>
-                  <p className="text-sm leading-relaxed">{problem?.description}</p>
+                  <p className="text-sm leading-relaxed">{currentQuestion?.description}</p>
 
-                  {problem?.examples && (
+                  {currentQuestion?.examples && (
                     <div className="mt-6">
                       <h3 className="text-lg font-semibold mb-2">Examples</h3>
                       <div className="space-y-4">
-                        {problem.examples.map((example, index) => (
+                        {currentQuestion.examples.map((example, index) => (
                           <div
                             key={index}
                             className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md text-sm"
@@ -361,13 +493,13 @@ const InterviewRoom: React.FC = () => {
                     </div>
                   )}
 
-                  {problem?.constraints && (
+                  {currentQuestion?.constraints && (
                     <div className="mt-6">
                       <h3 className="text-lg font-semibold mb-2">
                         Constraints
                       </h3>
                       <ul className="list-disc list-inside text-sm space-y-1">
-                        {problem.constraints.map((constraint, index) => (
+                        {currentQuestion.constraints.map((constraint, index) => (
                           <li key={index}>{constraint}</li>
                         ))}
                       </ul>

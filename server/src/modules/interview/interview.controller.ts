@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Req } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Req, Put } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { InterviewService } from './interview.service';
 import { Request } from 'express';
@@ -51,10 +51,35 @@ export class InterviewController {
     return this.interviewService.cancelInvitation(cancelData, user);
   }
 
+  @Get('my-interviews')
+  @UseGuards(JwtAuthGuard)
+  async getMyInterviews(@Req() req: Request) {
+    const user = req.user as any;
+    return this.interviewService.getUserInterviews(user.email);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async getInterview(@Param('id') id: string) {
     return this.interviewService.getInterviewById(id);
+  }
+
+  @Get(':id/questions')
+  @UseGuards(JwtAuthGuard)
+  async getInterviewQuestions(@Param('id') id: string) {
+    return this.interviewService.getInterviewQuestions(id);
+  }
+
+  @Get(':id/session')
+  @UseGuards(JwtAuthGuard)
+  async getInterviewSession(@Param('id') id: string) {
+    return this.interviewService.getInterviewSession(id);
+  }
+
+  @Put(':id/session/status')
+  @UseGuards(JwtAuthGuard)
+  async updateSessionStatus(@Param('id') id: string, @Body() body: { status: string }) {
+    return this.interviewService.updateSessionStatus(id, body.status);
   }
 
   @Get('invitation/:token')
