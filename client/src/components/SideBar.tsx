@@ -41,22 +41,20 @@ const SideBar: React.FC<SideBarProps> = ({ isExpanded }) => {
         <SideBarItem
           icon={<Code size={20} />}
           label="Code Arena"
-          isActive={true}
           isExpanded={isExpanded}
           path='/code-arena'
         />
         <SideBarItem
           icon={<Video size={20} />}
           label="Mock Arena"
-          isActive={false}
           isExpanded={isExpanded}
           path="/mock-arena"
         />
         <SideBarItem
           icon={<Settings size={20} />}
           label="Settings"
-          isActive={false}
           isExpanded={isExpanded}
+          path="/settings"
         />
       </nav>
 

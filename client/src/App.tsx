@@ -12,6 +12,7 @@ import Interview from "./components/mockarena/Interview";
 import InterviewRoom from "./components/mockarena/InterviewRoom";
 import InvitationView from "./components/interview/InvitationView";
 import QuestionSelection from "./components/interview/QuestionSelection";
+import Settings from "./components/settings/Settings";
 import LoginPage from "./components/auth/LoginPage";
 import AuthSuccess from "./components/auth/AuthSuccess";
 import AuthError from "./components/auth/AuthError";
@@ -97,6 +98,15 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <Interview />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                
+                {/* Settings route */}
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Settings />
                     </Layout>
                   </ProtectedRoute>
                 } />

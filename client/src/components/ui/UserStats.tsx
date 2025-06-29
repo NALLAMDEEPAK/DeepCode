@@ -33,7 +33,6 @@ const UserStats: React.FC = () => {
       setStats(response.data);
     } catch (err) {
       console.error('Error fetching user stats:', err);
-      // If API fails, use mock data for now
       setStats({
         userId: user?.googleId || '',
         easy: 193,
@@ -89,117 +88,123 @@ const UserStats: React.FC = () => {
   const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
 
   return (
-    <div className="p-4 bg-gray-800 dark:bg-gray-900 rounded-lg">
-      {/* Circular Progress */}
-      <div className="relative flex items-center justify-center mb-4">
-        <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
-          {/* Background circle */}
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            stroke="#374151"
-            strokeWidth="6"
-            fill="transparent"
-            className="opacity-30"
-          />
-          
-          {/* Progress segments */}
-          {/* Easy segment (green) */}
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            stroke="#10b981"
-            strokeWidth="6"
-            fill="transparent"
-            strokeDasharray={`${(stats.easy / totalProblems) * circumference} ${circumference}`}
-            strokeDashoffset="0"
-            strokeLinecap="round"
-            className="transition-all duration-500 ease-in-out"
-            transform="rotate(-90 60 60)"
-          />
-          
-          {/* Medium segment (yellow) */}
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            stroke="#f59e0b"
-            strokeWidth="6"
-            fill="transparent"
-            strokeDasharray={`${(stats.medium / totalProblems) * circumference} ${circumference}`}
-            strokeDashoffset={`-${(stats.easy / totalProblems) * circumference}`}
-            strokeLinecap="round"
-            className="transition-all duration-500 ease-in-out"
-            transform="rotate(-90 60 60)"
-          />
-          
-          {/* Hard segment (red) */}
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            stroke="#ef4444"
-            strokeWidth="6"
-            fill="transparent"
-            strokeDasharray={`${(stats.hard / totalProblems) * circumference} ${circumference}`}
-            strokeDashoffset={`-${((stats.easy + stats.medium) / totalProblems) * circumference}`}
-            strokeLinecap="round"
-            className="transition-all duration-500 ease-in-out"
-            transform="rotate(-90 60 60)"
-          />
-        </svg>
-        
-        {/* Center content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-3xl font-bold text-white">
-            {stats.totalSolved}
-          </div>
-          <div className="text-sm text-gray-400">
-            /{totalProblems}
-          </div>
-          <div className="text-xs text-green-400 flex items-center mt-1">
-            <span className="mr-1">✓</span>
-            Solved
-          </div>
-        </div>
+<div className="p-4 bg-gray-100 dark:bg-gray-900 rounded-lg shadow">
+  {/* Circular Progress */}
+  <div className="relative flex items-center justify-center mb-4">
+    <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
+      {/* Background circle */}
+      <circle
+        cx="60"
+        cy="60"
+        r={radius}
+        stroke="#e5e7eb"
+        strokeWidth="6"
+        fill="transparent"
+        className="opacity-30 dark:stroke-gray-700"
+      />
+
+      {/* Easy segment */}
+      <circle
+        cx="60"
+        cy="60"
+        r={radius}
+        stroke="#10b981"
+        strokeWidth="6"
+        fill="transparent"
+        strokeDasharray={`${(stats.easy / totalProblems) * circumference} ${circumference}`}
+        strokeDashoffset="0"
+        strokeLinecap="round"
+        className="transition-all duration-500 ease-in-out"
+      />
+
+      {/* Medium segment */}
+      <circle
+        cx="60"
+        cy="60"
+        r={radius}
+        stroke="#f59e0b"
+        strokeWidth="6"
+        fill="transparent"
+        strokeDasharray={`${(stats.medium / totalProblems) * circumference} ${circumference}`}
+        strokeDashoffset={`-${(stats.easy / totalProblems) * circumference}`}
+        strokeLinecap="round"
+        className="transition-all duration-500 ease-in-out"
+      />
+
+      {/* Hard segment */}
+      <circle
+        cx="60"
+        cy="60"
+        r={radius}
+        stroke="#ef4444"
+        strokeWidth="6"
+        fill="transparent"
+        strokeDasharray={`${(stats.hard / totalProblems) * circumference} ${circumference}`}
+        strokeDashoffset={`-${((stats.easy + stats.medium) / totalProblems) * circumference}`}
+        strokeLinecap="round"
+        className="transition-all duration-500 ease-in-out"
+      />
+    </svg>
+
+    {/* Center content */}
+    <div className="absolute inset-0 flex flex-col items-center justify-center">
+      <div className="text-3xl font-bold text-gray-900 dark:text-white">
+        {stats.totalSolved}
       </div>
-
-      {/* Attempting indicator */}
-      <div className="text-center mb-4">
-        <span className="text-sm text-gray-400">
-          {stats.attempting} Attempting
-        </span>
+      <div className="text-sm text-gray-500 dark:text-gray-400">
+        /{totalProblems}
       </div>
-
-      {/* Difficulty breakdown */}
-      <div className="grid grid-cols-3 gap-3">
-        {/* Easy */}
-        <div className="bg-gray-700 dark:bg-gray-800 rounded-lg p-3 text-center">
-          <div className="text-green-400 text-sm font-medium mb-1">Easy</div>
-          <div className="text-white font-bold">
-            {stats.easy}/{totalEasy}
-          </div>
-        </div>
-
-        {/* Medium */}
-        <div className="bg-gray-700 dark:bg-gray-800 rounded-lg p-3 text-center">
-          <div className="text-yellow-400 text-sm font-medium mb-1">Med.</div>
-          <div className="text-white font-bold">
-            {stats.medium}/{totalMedium}
-          </div>
-        </div>
-
-        {/* Hard */}
-        <div className="bg-gray-700 dark:bg-gray-800 rounded-lg p-3 text-center">
-          <div className="text-red-400 text-sm font-medium mb-1">Hard</div>
-          <div className="text-white font-bold">
-            {stats.hard}/{totalHard}
-          </div>
-        </div>
+      <div className="text-xs text-green-500 flex items-center mt-1">
+        <span className="mr-1">✓</span>
+        Solved
       </div>
     </div>
+  </div>
+
+  {/* Attempting */}
+  <div className="text-center mb-4">
+    <span className="text-sm text-gray-600 dark:text-gray-400">
+      {stats.attempting} Attempting
+    </span>
+  </div>
+
+  <div className="space-y-2">
+    {/* Easy */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center">
+        <div className="w-3 h-3 bg-green-500 rounded-lg mr-2"></div>
+        <span className="text-sm text-green-500 dark:text-green-400">Easy</span>
+      </div>
+      <span className="text-sm text-gray-900 dark:text-white font-medium">
+        {stats.easy}/{totalEasy}
+      </span>
+    </div>
+
+    {/* Medium */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center">
+        <div className="w-3 h-3 bg-yellow-500 rounded-lg mr-2"></div>
+        <span className="text-sm text-yellow-500 dark:text-yellow-400">Med.</span>
+      </div>
+      <span className="text-sm text-gray-900 dark:text-white font-medium">
+        {stats.medium}/{totalMedium}
+      </span>
+    </div>
+
+    {/* Hard */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center">
+        <div className="w-3 h-3 bg-red-500 rounded-lg mr-2"></div>
+        <span className="text-sm text-red-500 dark:text-red-400">Hard</span>
+      </div>
+      <span className="text-sm text-gray-900 dark:text-white font-medium">
+        {stats.hard}/{totalHard}
+      </span>
+    </div>
+  </div>
+
+</div>
+
   );
 };
 
