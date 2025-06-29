@@ -37,8 +37,6 @@ export interface InterviewRecord {
   topics: string;
   description?: string;
   status: 'pending' | 'accepted' | 'cancelled' | 'completed';
-  questions?: string;
-  question_type?: 'dsa' | 'ai';
   invitation_token: string;
   created_at: string;
   updated_at: string;
@@ -69,7 +67,7 @@ export class InterviewService {
 
   constructor(private readonly emailService: EmailService) {
     this.tursoClient = createClient({
-      url: process.env.TURSO_DATABASE_URL || 'libsql://dsalist-deepak135.aws-ap-south-1.turso.io',
+      url: process.env.TURSO_DATABASE_URL || 'libsql://interviews-deepak135.aws-ap-south-1.turso.io',
       authToken: process.env.TURSO_AUTH_TOKEN ?? 
         'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiI1ZDc3YWM3Ni1hZmRlLTQ0ZWEtYTEyNC1iOTJjYzMyODA3MzgiLCJpYXQiOjE3NTA1NzMxNjQsInJpZCI6IjAwN2Y5NjUxLWZkYTktNGUwYy05OTExLWM5YmEyM2QyMGFhMSJ9.AMM6zUmyipvN1EIQEKpyqQFCgaqI7Ff9fNGD9EZvypFsODGl4AcqLGVF3YbgvuxrHO8jRGt8nZSe5ou3hw-kDQ',
     });
@@ -503,6 +501,24 @@ export class InterviewService {
       return { success: true };
     } catch (error) {
       console.error('Error updating session status:', error);
+      throw error;
+    }
+  }
+
+  async updateInterviewStatus(interviewId: string, status: string) {
+    try {
+      await this.tursoClient.execute({
+        sql: `
+          UPDATE interviews 
+          SET status = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `,
+        args: [status, interviewId]
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating interview status:', error);
       throw error;
     }
   }

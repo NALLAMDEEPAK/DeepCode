@@ -68,11 +68,8 @@ const QuestionSelection: React.FC = () => {
         )
       };
 
-      const result = await acceptInvitation(acceptData);
-      
-      if (result.success) {
-        setShowConfirmation(true);
-      }
+      await acceptInvitation(acceptData);
+      setShowConfirmation(true);
     } catch (error) {
       console.error('Error accepting invitation:', error);
     } finally {

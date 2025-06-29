@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Interview } from "../../types";
-import { mockInterviews } from "../../data/mockData";
 import Button from "../ui/Button";
 import { BookOpen, Calendar, Clock, Mail, Plus, Send, User, X, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "../ui/Card";
@@ -9,11 +8,12 @@ import InterviewForm from "./InterviewForm";
 import Badge from "../ui/Badge";
 import InterviewCard from "./InterviewCard";
 import InterviewDashboard from "../dashboard/InterviewDashboard";
+import { useInterview } from "../../contexts/interviewContext";
 import axios from "axios";
 
 const MockArena: React.FC = () => {
     const navigate = useNavigate();
-    const [interviews, setInterviews] = useState<Interview[]>(mockInterviews);
+    const { interviews, loadUserInterviews, refreshInterviews } = useInterview();
     const [showNewInterviewForm, setShowNewInterviewForm] = useState(false);
     const [activeTab, setActiveTab] = useState<'dashboard' | 'schedule'>('dashboard');
     const [isLoading, setIsLoading] = useState(false);
@@ -27,28 +27,44 @@ const MockArena: React.FC = () => {
         description: ''
     });
 
-    const handleAcceptInterview = (id: string) => {
-        setInterviews(
-        interviews.map((interview) =>
-            interview.id === id ? { ...interview, status: 'accepted' } : interview
-        )
-        );
+    // Load interviews on component mount
+    useEffect(() => {
+        if (interviews.length === 0) {
+            loadUserInterviews();
+        }
+    }, [interviews.length, loadUserInterviews]);
+
+    const handleAcceptInterview = async (id: string) => {
+        try {
+            // Update interview status in backend
+            await axios.put(`/interview/${id}/status`, { status: 'accepted' });
+            // Refresh interviews from database
+            await refreshInterviews();
+        } catch (error) {
+            console.error('Error accepting interview:', error);
+        }
     };
 
-    const handleRejectInterview = (id: string) => {
-        setInterviews(
-        interviews.map((interview) =>
-            interview.id === id ? { ...interview, status: 'cancelled' } : interview
-        )
-        );
+    const handleRejectInterview = async (id: string) => {
+        try {
+            // Update interview status in backend
+            await axios.put(`/interview/${id}/status`, { status: 'cancelled' });
+            // Refresh interviews from database
+            await refreshInterviews();
+        } catch (error) {
+            console.error('Error rejecting interview:', error);
+        }
     };
 
-    const handleCancelInterview = (id: string) => {
-        setInterviews(
-        interviews.map((interview) =>
-            interview.id === id ? { ...interview, status: 'cancelled' } : interview
-        )
-        );
+    const handleCancelInterview = async (id: string) => {
+        try {
+            // Update interview status in backend
+            await axios.put(`/interview/${id}/status`, { status: 'cancelled' });
+            // Refresh interviews from database
+            await refreshInterviews();
+        } catch (error) {
+            console.error('Error cancelling interview:', error);
+        }
     };
 
     const handleJoinInterview = (id: string) => {
@@ -56,7 +72,7 @@ const MockArena: React.FC = () => {
         navigate(`/mock-arena/room/${id}`);
     };
 
-    
+    // Filter interviews from database data
     const pendingInterviews = interviews.filter(
         (interview) => interview.status === 'pending'
     );
@@ -103,21 +119,8 @@ const MockArena: React.FC = () => {
             });
 
             if (response.data.success) {
-                // Create local interview object for UI
-                const newInterview: Interview = {
-                    id: `interview_${Date.now()}`,
-                    title: `Mock Interview - ${formData.topics || 'General'}`,
-                    participant: extractedName,
-                    scheduledAt: scheduledDateTime.toISOString(),
-                    durationMinutes: formData.duration,
-                    description: formData.description || `Mock interview focusing on ${formData.topics || 'general programming concepts'}.`,
-                    status: 'pending',
-                    isIncoming: false,
-                    topics: formData.topics.split(',').map(t => t.trim()).filter(t => t),
-                    inviteeEmail: formData.email
-                };
-
-                setInterviews([...interviews, newInterview]);
+                // Refresh interviews from database instead of local state
+                await refreshInterviews();
                 
                 // Reset form
                 setFormData({
@@ -157,6 +160,20 @@ const MockArena: React.FC = () => {
         })
         };
     };
+
+    // Convert database interview format to component format
+    const convertToInterviewFormat = (dbInterview: any): Interview => ({
+        id: dbInterview.id,
+        title: `Mock Interview - ${dbInterview.topics || 'General'}`,
+        participant: dbInterview.isInterviewer ? dbInterview.participant_name : dbInterview.interviewer_name,
+        scheduledAt: dbInterview.scheduled_at,
+        durationMinutes: dbInterview.duration_minutes,
+        description: dbInterview.description || '',
+        status: dbInterview.status,
+        isIncoming: !dbInterview.isInterviewer,
+        topics: dbInterview.topics ? dbInterview.topics.split(',').map((t: string) => t.trim()) : [],
+        inviteeEmail: dbInterview.isInterviewer ? dbInterview.participant_email : dbInterview.interviewer_email
+    });
 
     return (
         <div className="space-y-8">
@@ -207,7 +224,7 @@ const MockArena: React.FC = () => {
                           {pendingInterviews.map((interview) => (
                             <InterviewCard
                               key={interview.id}
-                              interview={interview}
+                              interview={convertToInterviewFormat(interview)}
                               onAccept={handleAcceptInterview}
                               onReject={handleRejectInterview}
                             />
@@ -225,15 +242,16 @@ const MockArena: React.FC = () => {
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {acceptedInterviews.map((interview) => {
-                            const { date, time } = formatDateTime(interview.scheduledAt);
-                            const canJoinNow = isInterviewTimeNow(interview.scheduledAt);
+                            const { date, time } = formatDateTime(interview.scheduled_at);
+                            const canJoinNow = isInterviewTimeNow(interview.scheduled_at);
                             
                             return (
                               <Card key={interview.id} className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
                                 <CardContent className="p-6">
                                   <div className="flex justify-between items-start mb-4">
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                      {interview.title}
+                                      {interview.isInterviewer ? 'Interview with' : 'Interview by'}{' '}
+                                      {interview.isInterviewer ? interview.participant_name : interview.interviewer_name}
                                     </h3>
                                     <Badge variant={canJoinNow ? 'success' : 'info'}>
                                       {canJoinNow ? 'Ready to Join' : 'Scheduled'}
@@ -243,7 +261,9 @@ const MockArena: React.FC = () => {
                                   <div className="space-y-3 mb-6">
                                     <div className="flex items-center text-gray-600 dark:text-gray-300">
                                       <User className="h-4 w-4 mr-2" />
-                                      <span className="text-sm">{interview.participant}</span>
+                                      <span className="text-sm">
+                                        {interview.isInterviewer ? interview.participant_name : interview.interviewer_name}
+                                      </span>
                                     </div>
                                     <div className="flex items-center text-gray-600 dark:text-gray-300">
                                       <Calendar className="h-4 w-4 mr-2" />
@@ -251,13 +271,13 @@ const MockArena: React.FC = () => {
                                     </div>
                                     <div className="flex items-center text-gray-600 dark:text-gray-300">
                                       <Clock className="h-4 w-4 mr-2" />
-                                      <span className="text-sm">{time} ({interview.durationMinutes} mins)</span>
+                                      <span className="text-sm">{time} ({interview.duration_minutes} mins)</span>
                                     </div>
-                                    {interview.topics && interview.topics.length > 0 && (
+                                    {interview.topics && (
                                       <div className="flex flex-wrap gap-1 mt-3">
-                                        {interview.topics.map((topic, index) => (
+                                        {interview.topics.split(',').map((topic: string, index: number) => (
                                           <Badge key={index} variant="primary" size="sm">
-                                            {topic}
+                                            {topic.trim()}
                                           </Badge>
                                         ))}
                                       </div>
@@ -275,7 +295,7 @@ const MockArena: React.FC = () => {
                                         className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                                         onClick={() => handleJoinInterview(interview.id)}
                                       >
-                                        Enter Interview Room
+                                        Join Interview
                                       </Button>
                                     ) : (
                                       <Button
@@ -324,18 +344,30 @@ const MockArena: React.FC = () => {
                 </div>
             )}
 
-            {showNewInterviewForm && 
-            <div className="fixed top-0 left-0 bottom-0 right-0 flex items-center justify-center z-50">
-                <InterviewForm
-                    setShowNewInterviewForm={setShowNewInterviewForm}
-                    showNewInterviewForm={showNewInterviewForm}
-                    formData={formData}
-                    setFormData={setFormData}
-                    handleSendInvite={handleSendInvite}
-                    isLoading={isLoading}
-                 />
-            </div>
-            }
+            {/* Background Overlay + Modal for Schedule Interview Form */}
+            {showNewInterviewForm && (
+                <>
+                    {/* Semi-transparent background overlay */}
+                    <div 
+                        className="fixed inset-0 bg-black bg-opacity-50 z-40"
+                        onClick={() => setShowNewInterviewForm(false)}
+                    />
+                    
+                    {/* Modal Content */}
+                    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                        <div className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                            <InterviewForm
+                                setShowNewInterviewForm={setShowNewInterviewForm}
+                                showNewInterviewForm={showNewInterviewForm}
+                                formData={formData}
+                                setFormData={setFormData}
+                                handleSendInvite={handleSendInvite}
+                                isLoading={isLoading}
+                            />
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     )
 };

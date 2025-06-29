@@ -82,6 +82,12 @@ export class InterviewController {
     return this.interviewService.updateSessionStatus(id, body.status);
   }
 
+  @Put(':id/status')
+  @UseGuards(JwtAuthGuard)
+  async updateInterviewStatus(@Param('id') id: string, @Body() body: { status: string }) {
+    return this.interviewService.updateInterviewStatus(id, body.status);
+  }
+
   @Get('invitation/:token')
   async getInvitationDetails(@Param('token') token: string) {
     return this.interviewService.getInvitationByToken(token);

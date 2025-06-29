@@ -309,7 +309,7 @@ const InterviewRoom: React.FC = () => {
               </span>
             </div>
             <p className="text-center text-lg font-bold text-blue-600 dark:text-blue-400">
-              {"<1s"}
+              &lt;1s
             </p>
           </div>
           
@@ -366,7 +366,7 @@ const InterviewRoom: React.FC = () => {
         Easy: "success",
         Medium: "warning",
         Hard: "danger",
-      }[currentQuestion.difficulty] as "success" | "warning" | "danger")
+      }[currentQuestion.difficulty as "Easy" | "Medium" | "Hard"] as "success" | "warning" | "danger")
     : undefined;
 
   return (
@@ -453,7 +453,7 @@ const InterviewRoom: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {currentQuestion?.topics?.map((topic) => (
+                  {currentQuestion?.topics?.map((topic: string) => (
                     <Badge key={topic} variant="primary" size="sm">
                       {topic}
                     </Badge>
@@ -470,7 +470,7 @@ const InterviewRoom: React.FC = () => {
                     <div className="mt-6">
                       <h3 className="text-lg font-semibold mb-2">Examples</h3>
                       <div className="space-y-4">
-                        {currentQuestion.examples.map((example, index) => (
+                        {currentQuestion.examples.map((example: any, index: number) => (
                           <div
                             key={index}
                             className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md text-sm"
@@ -499,7 +499,7 @@ const InterviewRoom: React.FC = () => {
                         Constraints
                       </h3>
                       <ul className="list-disc list-inside text-sm space-y-1">
-                        {currentQuestion.constraints.map((constraint, index) => (
+                        {currentQuestion.constraints.map((constraint: string, index: number) => (
                           <li key={index}>{constraint}</li>
                         ))}
                       </ul>
