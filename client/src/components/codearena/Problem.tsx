@@ -49,7 +49,7 @@ const Problem = () => {
       inputLines: 2
     }
     setActiveTab("submissions");
-    axios.post('http://localhost:8000/submit-code', data).then(({data: res}) => {
+    axios.post('https://api.deepcode-server.xyz/submit-code', data).then(({data: res}) => {
       if ("isCompilerError" in res && res.isCompilerError !== "") {
         setCompilerError(res.isCompilerError);
         setSubmitStatus("isCompilerError");

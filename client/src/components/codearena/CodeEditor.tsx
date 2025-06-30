@@ -55,7 +55,7 @@ const CodeEditor = ({ language, onLanguageChange, onSubmitCode }: CodeEditorProp
       input: input,
       timeout: 2
     }
-    axios.post('http://localhost:8000/run-code', data).then(({ data: res }) => {
+    axios.post('https://api.deepcode-server.xyz/run-code', data).then(({ data: res }) => {
       setOutput(res.output ? res.output : res.error);
       (res.status >= 200 && res.status < 300) ? setIsSuccess("passed") : setIsSuccess("failed");
       setIsLoading(false);

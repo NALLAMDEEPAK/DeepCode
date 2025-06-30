@@ -14,7 +14,7 @@ export const ProblemProvider = ({ children }: { children: React.ReactNode }) => 
 
   useEffect(() => {
     const fetchProblems = async () => {
-      const response = await axios.get<Problem[]>('http://localhost:8000/dsalist');
+      const response = await axios.get<Problem[]>('https://api.deepcode-server.xyz/dsalist');
       setProblems(response.data);
     };
     fetchProblems();
