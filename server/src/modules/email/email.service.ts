@@ -36,12 +36,11 @@ export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    // Configure your email service (Gmail, SendGrid, etc.)
     this.transporter = nodemailer.createTransport({
-      service: 'gmail', // or your preferred email service
+      service: 'gmail',
       auth: {
-        user: "deepcode.arena@gmail.com",
-        pass: "wjft alqj ybtl fdek",
+        user: process.env.EMAIL || '',
+        pass: process.env.EMAIL_PASSWORD ?? '',
       },
     });
   }

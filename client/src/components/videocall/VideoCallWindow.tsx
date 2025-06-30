@@ -43,6 +43,18 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
   onEndCall,
 }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
+  const [windowSize, setWindowSize] = React.useState({
+    width: 400,
+    height: 320
+  });
+  const [windowPosition, setWindowPosition] = React.useState({
+    x: window.innerWidth - 420,
+    y: 100
+  });
+
+  // Define sizes for different states
+  const minimizedSize = { width: 280, height: 180 };
+  const maximizedSize = { width: 400, height: 320 };
 
   // Ensure videos continue playing and maintain their streams
   React.useEffect(() => {
@@ -75,9 +87,17 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
     }
   }, [remoteVideoRef.current?.srcObject, localVideoRef.current?.srcObject, isMinimized]);
 
-  // Handle minimize/maximize size changes
+  // Handle minimize/maximize toggle
   const handleMinimizeToggle = (minimize: boolean) => {
     setIsMinimized(minimize);
+    
+    if (minimize) {
+      // Store current size before minimizing
+      setWindowSize(minimizedSize);
+    } else {
+      // Restore to maximized size
+      setWindowSize(maximizedSize);
+    }
     
     // Ensure videos keep playing after state change
     setTimeout(() => {
@@ -90,30 +110,56 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
     }, 100);
   };
 
+  // Handle resize
+  const handleResize = (e: any, direction: any, ref: any, delta: any, position: any) => {
+    setWindowSize({
+      width: ref.offsetWidth,
+      height: ref.offsetHeight
+    });
+    setWindowPosition(position);
+  };
+
+  // Handle drag
+  const handleDrag = (e: any, data: any) => {
+    setWindowPosition({ x: data.x, y: data.y });
+  };
+
+  // Calculate control bar height
+  const controlBarHeight = isMinimized ? 0 : 60;
+  const videoContainerHeight = windowSize.height - controlBarHeight;
+
   return (
     <Rnd
-      default={{
-        x: window.innerWidth - 420,
-        y: 100,
-        width: isMinimized ? 280 : 400,
-        height: isMinimized ? 180 : 320,
-      }}
-      size={{
-        width: isMinimized ? 280 : 400,
-        height: isMinimized ? 180 : 320,
-      }}
+      size={windowSize}
+      position={windowPosition}
+      onResize={handleResize}
+      onDrag={handleDrag}
       minWidth={isMinimized ? 250 : 350}
       minHeight={isMinimized ? 150 : 280}
-      maxWidth={600}
-      maxHeight={500}
+      maxWidth={800}
+      maxHeight={600}
       bounds="window"
       className="z-50"
       enableResizing={!isMinimized}
+      disableDragging={false}
+      resizeHandleStyles={{
+        bottomRight: {
+          width: '20px',
+          height: '20px',
+          right: '0px',
+          bottom: '0px',
+          cursor: 'se-resize',
+          background: 'transparent'
+        }
+      }}
     >
       <div className="bg-black/95 backdrop-blur-lg rounded-xl border border-white/20 shadow-2xl overflow-hidden h-full flex flex-col">
         
         {/* Video Container */}
-        <div className="relative flex-1 bg-slate-900">
+        <div 
+          className="relative bg-slate-900 flex-shrink-0"
+          style={{ height: `${videoContainerHeight}px` }}
+        >
           {/* Remote Video - Always the main video */}
           <video
             ref={remoteVideoRef}
@@ -124,7 +170,8 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
             style={{ 
               display: 'block',
               width: '100%',
-              height: '100%'
+              height: '100%',
+              objectFit: 'cover'
             }}
           />
           
@@ -155,6 +202,10 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
                 ? 'bottom-2 right-2 w-16 h-12' 
                 : 'bottom-3 right-3 w-24 h-18'
             }`}
+            style={{
+              width: isMinimized ? '64px' : '96px',
+              height: isMinimized ? '48px' : '72px'
+            }}
           >
             <video
               ref={localVideoRef}
@@ -165,7 +216,8 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
               style={{ 
                 display: 'block',
                 width: '100%',
-                height: '100%'
+                height: '100%',
+                objectFit: 'cover'
               }}
             />
             {isVideoOff && (
@@ -203,7 +255,7 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
             <div className="absolute inset-0 flex items-center justify-center bg-slate-900/90">
               <div className="text-center text-white">
                 <div className="animate-spin w-6 h-6 border-2 border-white/30 border-t-white rounded-full mx-auto mb-2" />
-                <p className="text-xs">Connecting...</p>
+                {!isMinimized && <p className="text-xs">Connecting...</p>}
               </div>
             </div>
           )}
@@ -211,7 +263,10 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
 
         {/* Controls - Only show when maximized */}
         {!isMinimized && (
-          <div className="flex items-center justify-center gap-3 p-4 bg-black/60 border-t border-white/10 flex-shrink-0">
+          <div 
+            className="flex items-center justify-center gap-3 p-4 bg-black/60 border-t border-white/10 flex-shrink-0"
+            style={{ height: `${controlBarHeight}px` }}
+          >
             <button
               onClick={onToggleMute}
               className={`p-3 rounded-full transition-all ${

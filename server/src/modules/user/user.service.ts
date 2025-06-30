@@ -23,9 +23,8 @@ export class UserService {
 
   constructor() {
     this.tursoClient = createClient({
-      url: 'libsql://userdata-deepak135.aws-ap-south-1.turso.io',
-      authToken: process.env.TURSO_AUTH_TOKEN ?? 
-        'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiI1ZDc3YWM3Ni1hZmRlLTQ0ZWEtYTEyNC1iOTJjYzMyODA3MzgiLCJpYXQiOjE3NTA1NzMxNjQsInJpZCI6IjAwN2Y5NjUxLWZkYTktNGUwYy05OTExLWM5YmEyM2QyMGFhMSJ9.AMM6zUmyipvN1EIQEKpyqQFCgaqI7Ff9fNGD9EZvypFsODGl4AcqLGVF3YbgvuxrHO8jRGt8nZSe5ou3hw-kDQ',
+      url: process.env.USER_DATA_DB ?? '',
+      authToken: process.env.TURSO_AUTH_TOKEN ?? '',
     });
     this.initializeDatabase();
   }
@@ -342,7 +341,6 @@ export class UserService {
       });
     } catch (error) {
       console.error('Error logging user activity:', error);
-      // Don't throw error for activity logging failures
     }
   }
 }
