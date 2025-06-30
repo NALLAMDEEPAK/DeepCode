@@ -1,0 +1,587 @@
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { EmailService, InterviewInvitation } from '../email/email.service';
+import { createClient } from '@libsql/client';
+import { v4 as uuidv4 } from 'uuid';
+
+export interface ScheduleInterviewDto {
+  recipientEmail: string;
+  recipientName?: string;
+  date: string;
+  time: string;
+  duration: number;
+  topics: string;
+  description?: string;
+}
+
+export interface AcceptInvitationDto {
+  interviewId: string;
+  questionSelectionType: 'dsa' | 'ai';
+  selectedQuestions?: string[];
+  aiPrompt?: string;
+  topics?: string[];
+}
+
+export interface CancelInvitationDto {
+  interviewId: string;
+  reason?: string;
+}
+
+export interface InterviewRecord {
+  id: string;
+  interviewer_email: string;
+  interviewer_name: string;
+  participant_email: string;
+  participant_name: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  topics: string;
+  description?: string;
+  status: 'pending' | 'accepted' | 'cancelled' | 'completed';
+  invitation_token: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InterviewSession {
+  id: string;
+  interview_id: string;
+  interviewer_email: string;
+  candidate_email: string;
+  scheduled_time: string;
+  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InterviewQuestion {
+  id: string;
+  interview_id: string;
+  questions: string;
+  question_type: 'dsa' | 'ai';
+  created_at: string;
+}
+
+@Injectable()
+export class InterviewService {
+  private readonly tursoClient;
+
+  constructor(private readonly emailService: EmailService) {
+    this.tursoClient = createClient({
+      url: process.env.INTERVIEWS_DB ?? "",
+      authToken: process.env.TURSO_AUTH_TOKEN ?? '',
+    });
+    this.initializeDatabase();
+  }
+
+  private async initializeDatabase() {
+    try {
+      // Create interviews table
+      await this.tursoClient.execute(`
+        CREATE TABLE IF NOT EXISTS interviews (
+          id TEXT PRIMARY KEY,
+          interviewer_email TEXT NOT NULL,
+          interviewer_name TEXT NOT NULL,
+          participant_email TEXT NOT NULL,
+          participant_name TEXT NOT NULL,
+          scheduled_at TEXT NOT NULL,
+          duration_minutes INTEGER NOT NULL,
+          topics TEXT,
+          description TEXT,
+          status TEXT DEFAULT 'pending',
+          invitation_token TEXT UNIQUE NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create interview_questions table
+      await this.tursoClient.execute(`
+        CREATE TABLE IF NOT EXISTS interview_questions (
+          id TEXT PRIMARY KEY,
+          interview_id TEXT NOT NULL,
+          questions TEXT NOT NULL,
+          question_type TEXT NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (interview_id) REFERENCES interviews (id)
+        )
+      `);
+
+      // Create interview_sessions table
+      await this.tursoClient.execute(`
+        CREATE TABLE IF NOT EXISTS interview_sessions (
+          id TEXT PRIMARY KEY,
+          interview_id TEXT NOT NULL,
+          interviewer_email TEXT NOT NULL,
+          candidate_email TEXT NOT NULL,
+          scheduled_time TEXT NOT NULL,
+          status TEXT DEFAULT 'pending',
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (interview_id) REFERENCES interviews (id)
+        )
+      `);
+
+      console.log('✅ All interview tables initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize interview tables:', error);
+    }
+  }
+
+  async scheduleInterview(scheduleData: ScheduleInterviewDto, user: any) {
+    try {
+      // Generate unique IDs
+      const interviewId = uuidv4();
+      const invitationToken = uuidv4();
+
+      // Extract name from email if not provided
+      const recipientName = scheduleData.recipientName || 
+        scheduleData.recipientEmail.split('@')[0]
+          .split('.')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ');
+
+      // Format date and time
+      const interviewDateTime = new Date(`${scheduleData.date}T${scheduleData.time}`);
+      const formattedDate = interviewDateTime.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      const formattedTime = interviewDateTime.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Save interview to database
+      await this.tursoClient.execute({
+        sql: `
+          INSERT INTO interviews (
+            id, interviewer_email, interviewer_name, participant_email, 
+            participant_name, scheduled_at, duration_minutes, topics, 
+            description, invitation_token
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        args: [
+          interviewId,
+          user.email,
+          `${user.firstName} ${user.lastName}`,
+          scheduleData.recipientEmail,
+          recipientName,
+          interviewDateTime.toISOString(),
+          scheduleData.duration,
+          scheduleData.topics,
+          scheduleData.description || '',
+          invitationToken
+        ]
+      });
+
+      // Prepare invitation data
+      const invitation: InterviewInvitation = {
+        recipientEmail: scheduleData.recipientEmail,
+        recipientName,
+        senderName: `${user.firstName} ${user.lastName}`,
+        interviewDate: formattedDate,
+        interviewTime: formattedTime,
+        duration: scheduleData.duration,
+        topics: scheduleData.topics,
+        description: scheduleData.description,
+        meetingLink: `${process.env.PROD_FRONTEND_URL ?? process.env.DEV_FRONTEND_URL}/interview/invitation/${invitationToken}`
+      };
+
+      // Send email invitation
+      const emailSent = await this.emailService.sendInterviewInvitation(invitation);
+
+      if (emailSent) {
+        return {
+          success: true,
+          message: `Interview invitation sent successfully to ${scheduleData.recipientEmail}`,
+          interviewId,
+          invitationToken,
+          interviewDetails: {
+            date: formattedDate,
+            time: formattedTime,
+            duration: scheduleData.duration,
+            topics: scheduleData.topics,
+          }
+        };
+      } else {
+        // Clean up database record if email failed
+        await this.tursoClient.execute({
+          sql: 'DELETE FROM interviews WHERE id = ?',
+          args: [interviewId]
+        });
+        
+        return {
+          success: false,
+          message: 'Failed to send interview invitation. Please try again.',
+        };
+      }
+    } catch (error) {
+      console.error('Error scheduling interview:', error);
+      return {
+        success: false,
+        message: 'An error occurred while scheduling the interview.',
+      };
+    }
+  }
+
+  async acceptInvitation(acceptData: AcceptInvitationDto, user: any) {
+    try {
+      // Get interview details
+      const interview = await this.getInterviewById(acceptData.interviewId);
+      if (!interview) {
+        throw new NotFoundException('Interview not found');
+      }
+
+      if (interview.status !== 'pending') {
+        throw new BadRequestException('Interview invitation has already been processed');
+      }
+
+      let questions = '';
+      
+      if (acceptData.questionSelectionType === 'dsa') {
+        // Handle DSA question selection
+        if (!acceptData.selectedQuestions || acceptData.selectedQuestions.length === 0) {
+          throw new BadRequestException('Please select at least one question');
+        }
+        questions = JSON.stringify({
+          type: 'dsa',
+          questionIds: acceptData.selectedQuestions
+        });
+      } else if (acceptData.questionSelectionType === 'ai') {
+        // Handle AI question generation
+        const aiQuestions = await this.generateAIQuestions(
+          acceptData.aiPrompt || interview.topics,
+          acceptData.topics || []
+        );
+        questions = JSON.stringify({
+          type: 'ai',
+          questions: aiQuestions
+        });
+      }
+
+      // Update interview status
+      await this.tursoClient.execute({
+        sql: `
+          UPDATE interviews 
+          SET status = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `,
+        args: ['accepted', acceptData.interviewId]
+      });
+
+      // Store questions in interview_questions table
+      const questionId = uuidv4();
+      await this.tursoClient.execute({
+        sql: `
+          INSERT INTO interview_questions (id, interview_id, questions, question_type)
+          VALUES (?, ?, ?, ?)
+        `,
+        args: [questionId, acceptData.interviewId, questions, acceptData.questionSelectionType]
+      });
+
+      // Create interview session
+      const sessionId = uuidv4();
+      await this.tursoClient.execute({
+        sql: `
+          INSERT INTO interview_sessions (
+            id, interview_id, interviewer_email, candidate_email, scheduled_time
+          ) VALUES (?, ?, ?, ?, ?)
+        `,
+        args: [
+          sessionId,
+          acceptData.interviewId,
+          interview.interviewer_email,
+          user.email,
+          interview.scheduled_at
+        ]
+      });
+
+      // Send confirmation email to interviewer
+      await this.emailService.sendAcceptanceNotification({
+        interviewerEmail: interview.interviewer_email,
+        interviewerName: interview.interviewer_name,
+        participantName: user.firstName + ' ' + user.lastName,
+        interviewDate: new Date(interview.scheduled_at).toLocaleDateString(),
+        interviewTime: new Date(interview.scheduled_at).toLocaleTimeString(),
+        interviewLink: `${process.env.PROD_FRONTEND_URL ?? process.env.DEV_FRONTEND_URL}/mock-arena/room/${acceptData.interviewId}`
+      });
+
+      return {
+        success: true,
+        message: 'Interview invitation accepted successfully',
+        interviewId: acceptData.interviewId,
+        sessionId,
+        questionsAdded: true
+      };
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+      throw error;
+    }
+  }
+
+  async cancelInvitation(cancelData: CancelInvitationDto, user: any) {
+    try {
+      // Get interview details
+      const interview = await this.getInterviewById(cancelData.interviewId);
+      if (!interview) {
+        throw new NotFoundException('Interview not found');
+      }
+
+      // Update interview status
+      await this.tursoClient.execute({
+        sql: `
+          UPDATE interviews 
+          SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `,
+        args: [cancelData.interviewId]
+      });
+
+      // Update any existing session
+      await this.tursoClient.execute({
+        sql: `
+          UPDATE interview_sessions 
+          SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+          WHERE interview_id = ?
+        `,
+        args: [cancelData.interviewId]
+      });
+
+      // Send cancellation email to interviewer
+      await this.emailService.sendCancellationNotification({
+        interviewerEmail: interview.interviewer_email,
+        interviewerName: interview.interviewer_name,
+        participantName: user.firstName + ' ' + user.lastName,
+        interviewDate: new Date(interview.scheduled_at).toLocaleDateString(),
+        interviewTime: new Date(interview.scheduled_at).toLocaleTimeString(),
+        reason: cancelData.reason || 'No reason provided'
+      });
+
+      return {
+        success: true,
+        message: 'Interview invitation cancelled successfully'
+      };
+    } catch (error) {
+      console.error('Error cancelling invitation:', error);
+      throw error;
+    }
+  }
+
+  async getInterviewById(id: string): Promise<InterviewRecord | null> {
+    try {
+      const result = await this.tursoClient.execute({
+        sql: 'SELECT * FROM interviews WHERE id = ?',
+        args: [id]
+      });
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return result.rows[0] as any;
+    } catch (error) {
+      console.error('Error fetching interview:', error);
+      return null;
+    }
+  }
+
+  async getInvitationByToken(token: string): Promise<InterviewRecord | null> {
+    try {
+      const result = await this.tursoClient.execute({
+        sql: 'SELECT * FROM interviews WHERE invitation_token = ?',
+        args: [token]
+      });
+
+      if (result.rows.length === 0) {
+        throw new NotFoundException('Invitation not found or has expired');
+      }
+
+      return result.rows[0] as any;
+    } catch (error) {
+      console.error('Error fetching invitation:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new NotFoundException('Invitation not found or has expired');
+    }
+  }
+
+  async getUserInterviews(userEmail: string): Promise<any[]> {
+    try {
+      const result = await this.tursoClient.execute({
+        sql: `
+          SELECT 
+            i.*,
+            s.id as session_id,
+            s.status as session_status
+          FROM interviews i
+          LEFT JOIN interview_sessions s ON i.id = s.interview_id
+          WHERE i.interviewer_email = ? OR i.participant_email = ?
+          ORDER BY i.scheduled_at DESC
+        `,
+        args: [userEmail, userEmail]
+      });
+
+      return result.rows.map((row: any) => ({
+        ...row,
+        isInterviewer: row.interviewer_email === userEmail,
+        isParticipant: row.participant_email === userEmail
+      }));
+    } catch (error) {
+      console.error('Error fetching user interviews:', error);
+      return [];
+    }
+  }
+
+  async getInterviewQuestions(interviewId: string): Promise<any> {
+    try {
+      const result = await this.tursoClient.execute({
+        sql: 'SELECT * FROM interview_questions WHERE interview_id = ?',
+        args: [interviewId]
+      });
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const questionData = result.rows[0] as any;
+      return {
+        ...questionData,
+        questions: JSON.parse(questionData.questions)
+      };
+    } catch (error) {
+      console.error('Error fetching interview questions:', error);
+      return null;
+    }
+  }
+
+  async getInterviewSession(interviewId: string): Promise<any> {
+    try {
+      const result = await this.tursoClient.execute({
+        sql: `
+          SELECT 
+            s.*,
+            i.interviewer_name,
+            i.participant_name,
+            i.topics,
+            i.duration_minutes,
+            i.description
+          FROM interview_sessions s
+          JOIN interviews i ON s.interview_id = i.id
+          WHERE s.interview_id = ?
+        `,
+        args: [interviewId]
+      });
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error fetching interview session:', error);
+      return null;
+    }
+  }
+
+  async updateSessionStatus(interviewId: string, status: string) {
+    try {
+      await this.tursoClient.execute({
+        sql: `
+          UPDATE interview_sessions 
+          SET status = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE interview_id = ?
+        `,
+        args: [status, interviewId]
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating session status:', error);
+      throw error;
+    }
+  }
+
+  async updateInterviewStatus(interviewId: string, status: string) {
+    try {
+      await this.tursoClient.execute({
+        sql: `
+          UPDATE interviews 
+          SET status = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `,
+        args: [status, interviewId]
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating interview status:', error);
+      throw error;
+    }
+  }
+
+  private async generateAIQuestions(prompt: string, topics: string[]): Promise<any[]> {
+    // Simulate AI question generation
+    // In a real implementation, you would call an AI service like OpenAI
+    const sampleQuestions = [
+      {
+        id: 'ai_1',
+        title: 'Two Sum Variation',
+        difficulty: 'Medium',
+        description: 'Given an array of integers and a target sum, find all unique pairs that sum to the target.',
+        topics: topics.length > 0 ? topics : ['Array', 'Hash Table'],
+        examples: [
+          {
+            input: 'nums = [2,7,11,15], target = 9',
+            output: '[[2,7]]',
+            explanation: 'The pair [2,7] sums to 9'
+          }
+        ],
+        constraints: [
+          '2 <= nums.length <= 10^4',
+          '-10^9 <= nums[i] <= 10^9'
+        ]
+      },
+      {
+        id: 'ai_2',
+        title: 'Binary Tree Traversal',
+        difficulty: 'Medium',
+        description: 'Implement in-order traversal of a binary tree without using recursion.',
+        topics: topics.length > 0 ? topics : ['Tree', 'Stack'],
+        examples: [
+          {
+            input: 'root = [1,null,2,3]',
+            output: '[1,3,2]',
+            explanation: 'In-order traversal visits nodes in left-root-right order'
+          }
+        ],
+        constraints: [
+          'The number of nodes in the tree is in the range [0, 100]',
+          '-100 <= Node.val <= 100'
+        ]
+      },
+      {
+        id: 'ai_3',
+        title: 'Dynamic Programming Challenge',
+        difficulty: 'Hard',
+        description: 'Find the longest increasing subsequence in an array.',
+        topics: topics.length > 0 ? topics : ['Dynamic Programming', 'Array'],
+        examples: [
+          {
+            input: 'nums = [10,9,2,5,3,7,101,18]',
+            output: '4',
+            explanation: 'The longest increasing subsequence is [2,3,7,18], therefore the length is 4'
+          }
+        ],
+        constraints: [
+          '1 <= nums.length <= 2500',
+          '-10^4 <= nums[i] <= 10^4'
+        ]
+      }
+    ];
+
+    return sampleQuestions;
+  }
+}
