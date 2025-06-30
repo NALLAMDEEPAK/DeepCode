@@ -3,13 +3,12 @@ import { createClient } from '@libsql/client';
 
 @Injectable()
 export class DsaListService {
-  private readonly tursoClient;
+  private readonly tursoClient; 
   constructor() {
     this.tursoClient = createClient({
-      url: 'libsql://dsalist-deepak135.aws-ap-south-1.turso.io',
+      url: process.env.DSA_LIST_DB ?? '',
       authToken:
-        process.env.TURSO_AUTH_TOKEN ??
-        'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiI1ZDc3YWM3Ni1hZmRlLTQ0ZWEtYTEyNC1iOTJjYzMyODA3MzgiLCJpYXQiOjE3NTA1NzMxNjQsInJpZCI6IjAwN2Y5NjUxLWZkYTktNGUwYy05OTExLWM5YmEyM2QyMGFhMSJ9.AMM6zUmyipvN1EIQEKpyqQFCgaqI7Ff9fNGD9EZvypFsODGl4AcqLGVF3YbgvuxrHO8jRGt8nZSe5ou3hw-kDQ',
+        process.env.TURSO_AUTH_TOKEN ?? '',
     });
   }
 

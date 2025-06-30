@@ -1,15 +1,15 @@
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller()
 export class SubmitCodeController {
   constructor(private readonly httpService: HttpService) {}
 
   @Post('/submit-code')
+  @UseGuards(JwtAuthGuard) // Protect this route with authentication
   async runCode(@Body() body: any): Promise<Record<string, any>> {
-
-
     const prependCode = `import signal
 def handler(signum, frame):
     raise TimeoutError("Time Limit Exceeded")
