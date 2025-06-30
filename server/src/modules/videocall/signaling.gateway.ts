@@ -8,7 +8,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { RoomService } from '../room/room.service';
+import { RoomService } from './room.service';
 
 interface JoinRoomData {
   roomId: string;
@@ -16,7 +16,7 @@ interface JoinRoomData {
 }
 
 interface SignalData {
-  type: 'offer' | 'answer' | 'ice-candidate';
+  type: 'offer' | 'answer' | 'ice-candidate' | 'screen-share-start' | 'screen-share-stop';
   offer?: RTCSessionDescriptionInit;
   answer?: RTCSessionDescriptionInit;
   candidate?: RTCIceCandidateInit;
@@ -102,6 +102,34 @@ export class SignalingGateway implements OnGatewayConnection, OnGatewayDisconnec
         fromUserId: client.id,
       });
     }
+  }
+
+  @SubscribeMessage('screen-share-start')
+  handleScreenShareStart(
+    @MessageBody() data: { roomId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { roomId } = data;
+    console.log(`User ${client.id} started screen sharing in room ${roomId}`);
+    
+    // Notify other users in the room
+    client.to(roomId).emit('screen-share-started', {
+      userId: client.id,
+    });
+  }
+
+  @SubscribeMessage('screen-share-stop')
+  handleScreenShareStop(
+    @MessageBody() data: { roomId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { roomId } = data;
+    console.log(`User ${client.id} stopped screen sharing in room ${roomId}`);
+    
+    // Notify other users in the room
+    client.to(roomId).emit('screen-share-stopped', {
+      userId: client.id,
+    });
   }
 
   @SubscribeMessage('leave-room')

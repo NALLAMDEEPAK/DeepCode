@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Code2, Play, FileText, CheckCircle, XCircle, AlertCircle, Loader2, Clock, Target, Users } from "lucide-react";
+import { ArrowLeft, Code2, Play, FileText, CheckCircle, XCircle, AlertCircle, Loader2, Clock, Target, Users, Video, VideoOff } from "lucide-react";
 import Button from "../ui/Button";
 import Badge from "../ui/Badge";
 import { Card, CardContent } from "../ui/Card";
 import CodeEditor from "./CodeEditor";
+import VideoCallWindow from "../videocall/VideoCallWindow";
+import { useWebRTC } from "../../hooks/useWebRTC";
+import { useAuth } from "../../contexts/authContext";
 import axios from "axios";
 import { useProblems } from "../../contexts/problemsContext";
 
 const InterviewRoom: React.FC = () => {
   const { problems } = useProblems();
+  const { user } = useAuth();
   const { id } = useParams();
   const [activeView, setActiveView] = useState<"code" | "results">("code");
   const [isLoading, setIsLoading] = useState(false);
@@ -20,12 +24,46 @@ const InterviewRoom: React.FC = () => {
   const [interviewSession, setInterviewSession] = useState<any>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+
+  // Video call refs
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+
+  // WebRTC hook
+  const {
+    localStream,
+    remoteStream,
+    isConnected,
+    isMuted,
+    isVideoOff,
+    isScreenSharing,
+    remoteScreenSharing,
+    remoteUsername,
+    toggleMute,
+    toggleVideo,
+    toggleScreenShare,
+    startCall,
+    endCall
+  } = useWebRTC(id || '', `${user?.firstName} ${user?.lastName}` || 'Anonymous');
 
   useEffect(() => {
     if (id) {
       loadInterviewData();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
 
   const loadInterviewData = async () => {
     try {
@@ -135,6 +173,16 @@ const InterviewRoom: React.FC = () => {
       setTestResults(null);
       setActiveView("code");
     }
+  };
+
+  const handleStartVideoCall = () => {
+    startCall();
+    setShowVideoCall(true);
+  };
+
+  const handleEndVideoCall = () => {
+    endCall();
+    setShowVideoCall(false);
   };
 
   const renderTestResults = () => {
@@ -309,7 +357,7 @@ const InterviewRoom: React.FC = () => {
               </span>
             </div>
             <p className="text-center text-lg font-bold text-blue-600 dark:text-blue-400">
-              &lt;1s
+              <1s
             </p>
           </div>
           
@@ -392,15 +440,38 @@ const InterviewRoom: React.FC = () => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Users className="w-4 h-4 text-green-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">2 participants</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {isConnected ? '2 participants' : '1 participant'}
+              </span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Live</span>
+              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {isConnected ? 'Live' : 'Waiting'}
+              </span>
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
               Question {currentQuestionIndex + 1} of {totalQuestions}
             </div>
+            {!showVideoCall ? (
+              <Button
+                onClick={handleStartVideoCall}
+                variant="success"
+                size="sm"
+                icon={<Video size={16} />}
+              >
+                Start Video Call
+              </Button>
+            ) : (
+              <Button
+                onClick={handleEndVideoCall}
+                variant="danger"
+                size="sm"
+                icon={<VideoOff size={16} />}
+              >
+                End Call
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -573,6 +644,24 @@ const InterviewRoom: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Video Call Window */}
+      {showVideoCall && (
+        <VideoCallWindow
+          localVideoRef={localVideoRef}
+          remoteVideoRef={remoteVideoRef}
+          isConnected={isConnected}
+          isMuted={isMuted}
+          isVideoOff={isVideoOff}
+          isScreenSharing={isScreenSharing}
+          remoteScreenSharing={remoteScreenSharing}
+          remoteUsername={remoteUsername}
+          onToggleMute={toggleMute}
+          onToggleVideo={toggleVideo}
+          onToggleScreenShare={toggleScreenShare}
+          onEndCall={handleEndVideoCall}
+        />
+      )}
     </div>
   );
 };
