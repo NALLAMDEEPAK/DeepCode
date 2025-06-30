@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, SetStateAction } from 'react';
 import io, { Socket } from 'socket.io-client';
 
 interface UseWebRTCReturn {
@@ -123,7 +123,7 @@ export const useWebRTC = (roomId: string, username: string): UseWebRTCReturn => 
       socket.emit('join-room', { roomId, username });
     });
 
-    socket.on('signal', async (data) => {
+    socket.on('signal', async (data: { type: string; fromUserId: string | null; offer: RTCSessionDescriptionInit; answer: RTCSessionDescriptionInit; candidate: RTCIceCandidateInit | undefined; }) => {
       const peerConnection = peerConnectionRef.current;
       if (!peerConnection) return;
 
@@ -163,7 +163,7 @@ export const useWebRTC = (roomId: string, username: string): UseWebRTCReturn => 
       }
     });
 
-    socket.on('user-joined', async (data) => {
+    socket.on('user-joined', async (data: { username: SetStateAction<string | null>; userId: string | null; }) => {
       console.log('User joined:', data.username, data.userId);
       remoteUserIdRef.current = data.userId;
       setRemoteUsername(data.username);
@@ -197,7 +197,7 @@ export const useWebRTC = (roomId: string, username: string): UseWebRTCReturn => 
       }, 1500);
     });
 
-    socket.on('room-users', (users) => {
+    socket.on('room-users', (users: string | any[]) => {
       console.log('Existing users in room:', users.length);
       if (users.length > 0) {
         isInitiatorRef.current = false;
@@ -207,7 +207,7 @@ export const useWebRTC = (roomId: string, username: string): UseWebRTCReturn => 
       }
     });
 
-    socket.on('user-left', (data) => {
+    socket.on('user-left', (data: { userId: string | null; }) => {
       console.log('User left:', data.userId);
       if (data.userId === remoteUserIdRef.current) {
         setRemoteStream(null);
@@ -218,14 +218,14 @@ export const useWebRTC = (roomId: string, username: string): UseWebRTCReturn => 
       }
     });
 
-    socket.on('screen-share-started', (data) => {
+    socket.on('screen-share-started', (data: { userId: string | null; }) => {
       console.log('Remote user started screen sharing:', data.userId);
       if (data.userId === remoteUserIdRef.current) {
         setRemoteScreenSharing(true);
       }
     });
 
-    socket.on('screen-share-stopped', (data) => {
+    socket.on('screen-share-stopped', (data: { userId: string | null; }) => {
       console.log('Remote user stopped screen sharing:', data.userId);
       if (data.userId === remoteUserIdRef.current) {
         setRemoteScreenSharing(false);

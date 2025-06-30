@@ -357,7 +357,7 @@ const InterviewRoom: React.FC = () => {
               </span>
             </div>
             <p className="text-center text-lg font-bold text-blue-600 dark:text-blue-400">
-              <1s
+              {"<1s"}
             </p>
           </div>
           

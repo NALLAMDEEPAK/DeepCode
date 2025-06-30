@@ -38,15 +38,15 @@ export class RoomService {
     };
 
     // Add user to room
-    room.users.set(socketId, user);
+    room?.users.set(socketId, user);
 
     // Track user's rooms
     if (!this.userRooms.has(socketId)) {
       this.userRooms.set(socketId, new Set());
     }
-    this.userRooms.get(socketId).add(roomId);
+    this.userRooms.get(socketId)?.add(roomId);
 
-    console.log(`User ${username} joined room ${roomId}. Room size: ${room.users.size}`);
+    console.log(`User ${username} joined room ${roomId}. Room size: ${room?.users.size}`);
   }
 
   /**

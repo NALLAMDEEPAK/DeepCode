@@ -14,8 +14,8 @@ import {
 } from 'lucide-react';
 
 interface VideoCallWindowProps {
-  localVideoRef: React.RefObject<HTMLVideoElement>;
-  remoteVideoRef: React.RefObject<HTMLVideoElement>;
+  localVideoRef: React.RefObject<HTMLVideoElement | null>;
+  remoteVideoRef: React.RefObject<HTMLVideoElement | null>;
   isConnected: boolean;
   isMuted: boolean;
   isVideoOff: boolean;
