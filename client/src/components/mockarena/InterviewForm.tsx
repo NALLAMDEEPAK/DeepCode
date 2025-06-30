@@ -16,6 +16,7 @@ interface InterviewFormProps {
     };
     setFormData: (data: any) => void;
     handleSendInvite: () => void;
+    isLoading?: boolean;
 }
 
 const InterviewForm = ({
@@ -23,7 +24,8 @@ const InterviewForm = ({
     showNewInterviewForm,
     formData,
     setFormData,
-    handleSendInvite
+    handleSendInvite,
+    isLoading = false
 }: InterviewFormProps) => {
     return (
         <Card className="bg-white dark:bg-gray-800 shadow-2xl border-0 transition-all duration-300 ease-in-out z-10">
@@ -158,9 +160,11 @@ const InterviewForm = ({
                 variant="primary"
                 onClick={handleSendInvite}
                 icon={<Send size={16} />}
+                isLoading={isLoading}
+                disabled={isLoading}
                 className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
               >
-                Send Invitation
+                {isLoading ? 'Sending...' : 'Send Invitation'}
               </Button>
             </div>
           </CardContent>

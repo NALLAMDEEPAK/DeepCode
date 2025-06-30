@@ -1,6 +1,7 @@
 import React from "react";
 import SideBarItem from "./SideBarItem";
 import { useTheme } from "../contexts/themeContext";
+import UserStats from "./ui/UserStats";
 
 import { Settings, Code2, Code, Video } from "lucide-react";
 
@@ -40,39 +41,39 @@ const SideBar: React.FC<SideBarProps> = ({ isExpanded }) => {
         <SideBarItem
           icon={<Code size={20} />}
           label="Code Arena"
-          isActive={true}
           isExpanded={isExpanded}
           path='/code-arena'
         />
         <SideBarItem
           icon={<Video size={20} />}
           label="Mock Arena"
-          isActive={false}
           isExpanded={isExpanded}
           path="/mock-arena"
         />
         <SideBarItem
           icon={<Settings size={20} />}
           label="Settings"
-          isActive={false}
           isExpanded={isExpanded}
+          path="/settings"
         />
       </nav>
 
+      {/* User Stats Component */}
       <div className={`
-        flex items-center p-4 dark:bg-gray-600/20 rounded-t-xl
-        ${isExpanded ? 'justify-start' : 'justify-center'}
+        p-2 transition-all duration-300
+        ${isExpanded ? 'block' : 'hidden'}
       `}>
-        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-          <span className="text-gray-600 font-medium">U</span>
-        </div>
-        {isExpanded && (
-          <div className="ml-3">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">User Name</p>
-            <p className="text-xs text-gray-500">user@example.com</p>
-          </div>
-        )}
+        <UserStats />
       </div>
+
+      {/* Collapsed state indicator */}
+      {!isExpanded && (
+        <div className="flex items-center justify-center p-4">
+          <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+            <span className="text-gray-600 dark:text-gray-400 font-medium text-sm">U</span>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };

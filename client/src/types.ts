@@ -30,3 +30,11 @@ export interface Interview {
   topics?: string[];
   inviteeEmail?: string;
 }
+
+export interface User {
+  googleId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  picture: string;
+}

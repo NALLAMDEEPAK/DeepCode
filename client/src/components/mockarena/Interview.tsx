@@ -44,8 +44,8 @@ const Interview = () => {
 
   };
   return (
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="lg:w-1/2 space-y-6 flex flex-col overflow-hidden max-h-[80vh]">
+      <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-120px)]">
+        <div className="lg:w-1/2 space-y-6 flex flex-col overflow-hidden">
           <Card className="flex flex-col flex-1 overflow-hidden">
             <div className="border-b border-gray-200 dark:border-gray-700">
               <div className="flex">
@@ -108,10 +108,9 @@ const Interview = () => {
             </CardContent>
           </Card>
         </div>
-        <div className="lg:w-1/2">
-          <div className="sticky">
+        <div className="lg:w-1/2 flex flex-col">
+          <div className="flex-1">
             <CodeEditor language="python" onSubmitCode={onSubmitCode} />
-
           </div>
         </div>
       </div>
