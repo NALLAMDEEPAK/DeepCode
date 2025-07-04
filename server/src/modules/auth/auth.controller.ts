@@ -32,14 +32,20 @@ export class AuthController {
       // Generate JWT token
       const token = await this.authService.generateJwtToken(user);
       
+      // Determine if we're in production
+      const isProduction = process.env.STAGE === 'Production';
+      
       // Set JWT as httpOnly cookie for security
       res.cookie('auth-token', token, {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        secure: isProduction, // Only secure in production
+        sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production, 'lax' for local
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        domain: process.env.STAGE === 'Production' ? '.deepcode-server.xyz' : undefined,
+        domain: isProduction ? '.deepcode-server.xyz' : undefined,
+        path: '/',
       });
+
+      console.log(`🍪 Auth cookie set for ${user.email} (production: ${isProduction})`);
 
       const frontendUrl = process.env.PROD_FRONTEND_URL ?? process.env.DEV_FRONTEND_URL;
       res.redirect(`${frontendUrl}/auth/success`);
@@ -56,6 +62,7 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   async getProfile(@Req() req: Request) {
+    console.log(`✅ Auth check successful for user: ${(req.user as any)?.email}`);
     return {
       user: req.user,
       message: 'User authenticated successfully',
@@ -67,12 +74,17 @@ export class AuthController {
    */
   @Get('logout')
   async logout(@Res() res: Response) {
+    const isProduction = process.env.STAGE === 'Production';
+    
     res.clearCookie('auth-token', {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      domain: process.env.NODE_ENV === 'Production' ? '.deepcode-server.xyz' : undefined,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      domain: isProduction ? '.deepcode-server.xyz' : undefined,
+      path: '/',
     });
+    
+    console.log(`🍪 Auth cookie cleared (production: ${isProduction})`);
     return res.json({ message: 'Logged out successfully' });
   }
 }

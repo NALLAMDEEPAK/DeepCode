@@ -72,6 +72,15 @@ const LoginPage: React.FC = () => {
               Continue with Google
             </button>
 
+            {/* Development Info */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="text-xs text-blue-800 dark:text-blue-300">
+                  <strong>Development Mode:</strong> Using production API for authentication
+                </div>
+              </div>
+            )}
+
             {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

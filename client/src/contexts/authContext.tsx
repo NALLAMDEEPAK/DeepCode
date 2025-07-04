@@ -3,9 +3,17 @@ import axios from 'axios';
 
 // Configure axios defaults
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.deepcode-server.xyz' 
-  : 'http://localhost:8000';
+
+// Set the base URL based on environment
+const getBaseURL = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://api.deepcode-server.xyz';
+  }
+  // For local development, check if we want to use local or production API
+  return process.env.REACT_APP_API_URL || 'https://api.deepcode-server.xyz';
+};
+
+axios.defaults.baseURL = getBaseURL();
 
 export interface User {
   googleId: string;
@@ -40,11 +48,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Initiates Google OAuth login by redirecting to backend
    */
   const login = () => {
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://api.deepcode-server.xyz' 
-      : 'http://localhost:8000';
+    const baseUrl = getBaseURL();
     window.location.href = `${baseUrl}/auth/google`;
-
   };
 
   /**
@@ -67,11 +72,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuth = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('/auth/me');
+      
+      // Add extra headers to ensure cookies are sent
+      const response = await axios.get('/auth/me', {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
       setUser(response.data.user);
-    } catch (error) {
-      console.error('Auth check failed:', error);
+      console.log('✅ Authentication successful:', response.data.user);
+    } catch (error: any) {
+      console.error('❌ Auth check failed:', error.response?.status, error.response?.data);
       setUser(null);
+      
+      // If we get a 401 and we're in development, show helpful message
+      if (error.response?.status === 401 && process.env.NODE_ENV === 'development') {
+        console.log('💡 Tip: If you logged in via browser directly to the API, try logging in through the app instead');
+      }
     } finally {
       setIsLoading(false);
     }
