@@ -35,9 +35,10 @@ export class AuthController {
       // Set JWT as httpOnly cookie for security
       res.cookie('auth-token', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: true, // Always use secure cookies for production
+        sameSite: 'none', // Required for cross-origin cookies
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        domain: process.env.NODE_ENV === 'production' ? '.deepcode-server.xyz' : undefined,
       });
 
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -66,7 +67,12 @@ export class AuthController {
    */
   @Get('logout')
   async logout(@Res() res: Response) {
-    res.clearCookie('auth-token');
+    res.clearCookie('auth-token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      domain: process.env.NODE_ENV === 'production' ? '.deepcode-server.xyz' : undefined,
+    });
     return res.json({ message: 'Logged out successfully' });
   }
 }

@@ -5,10 +5,14 @@ import { Strategy, VerifyCallback, StrategyOptions } from 'passport-google-oauth
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor() {
+    const callbackURL = process.env.NODE_ENV === 'production'
+      ? 'https://api.deepcode-server.xyz/auth/google/callback'
+      : process.env.CALLBACK_URL ?? "http://localhost:8000/auth/google/callback";
+
     super({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.SECRET_GOOGLE_CLIENT,
-      callbackURL: process.env.CALLBACK_URL ?? "http://localhost:8000/auth/google/callback",
+      callbackURL,
       scope: ['email', 'profile'],
       passReqToCallback: false
     } as StrategyOptions);

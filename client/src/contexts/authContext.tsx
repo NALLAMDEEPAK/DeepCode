@@ -3,7 +3,9 @@ import axios from 'axios';
 
 // Configure axios defaults
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = 'http://localhost:8000';
+axios.defaults.baseURL = process.env.NODE_ENV === 'production' 
+  ? 'https://api.deepcode-server.xyz' 
+  : 'http://localhost:8000';
 
 export interface User {
   googleId: string;
@@ -38,7 +40,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Initiates Google OAuth login by redirecting to backend
    */
   const login = () => {
-    window.location.href = 'http://localhost:8000/auth/google';
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://api.deepcode-server.xyz' 
+      : 'http://localhost:8000';
+    window.location.href = `${baseUrl}/auth/google`;
   };
 
   /**

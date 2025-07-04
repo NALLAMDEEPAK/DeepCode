@@ -112,9 +112,14 @@ export const useWebRTC = (roomId: string, username: string): UseWebRTCReturn => 
 
   // Initialize socket connection
   const initializeSocket = useCallback(() => {
-    const socket = io('http://localhost:8000', {
+    const socketUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://api.deepcode-server.xyz' 
+      : 'http://localhost:8000';
+
+    const socket = io(socketUrl, {
       transports: ['websocket'],
       upgrade: false,
+      withCredentials: true,
     });
     socketRef.current = socket;
 

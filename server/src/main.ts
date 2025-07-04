@@ -13,10 +13,16 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3000', // Development
+      'https://localhost:3000', // Development HTTPS
+      'http://localhost:5173', // Vite dev server
+      'https://localhost:5173', // Vite dev server HTTPS
+      'https://deepcode.vercel.app', // Production frontend (if you have one)
+      'https://api.deepcode-server.xyz', // Your deployed domain
     ],
     credentials: true, // Allow cookies to be sent
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie'],
   });
   
   await app.listen(process.env.PORT || 8000);
