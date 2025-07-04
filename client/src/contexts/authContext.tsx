@@ -9,11 +9,38 @@ const getBaseURL = () => {
   if (process.env.NODE_ENV === 'production') {
     return 'https://api.deepcode-server.xyz';
   }
-  // For local development, check if we want to use local or production API
+  // For local development, use production API
   return process.env.REACT_APP_API_URL || 'https://api.deepcode-server.xyz';
 };
 
 axios.defaults.baseURL = getBaseURL();
+
+// Add request interceptor to ensure credentials are always sent
+axios.interceptors.request.use(
+  (config) => {
+    config.withCredentials = true;
+    // Add explicit headers for CORS
+    config.headers = {
+      ...config.headers,
+      'Content-Type': 'application/json',
+    };
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle auth errors
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.log('🔒 Authentication failed - redirecting to login');
+    }
+    return Promise.reject(error);
+  }
+);
 
 export interface User {
   googleId: string;
@@ -73,7 +100,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // Add extra headers to ensure cookies are sent
+      console.log('🔍 Checking authentication with:', getBaseURL());
+      
       const response = await axios.get('/auth/me', {
         withCredentials: true,
         headers: {
@@ -87,9 +115,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('❌ Auth check failed:', error.response?.status, error.response?.data);
       setUser(null);
       
-      // If we get a 401 and we're in development, show helpful message
-      if (error.response?.status === 401 && process.env.NODE_ENV === 'development') {
-        console.log('💡 Tip: If you logged in via browser directly to the API, try logging in through the app instead');
+      // Log CORS-specific errors
+      if (error.message?.includes('CORS')) {
+        console.error('🚫 CORS Error: Make sure the server allows your origin');
       }
     } finally {
       setIsLoading(false);
