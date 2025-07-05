@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Search, Brain, List, CheckCircle, ArrowRight, Sparkles, Calendar, Clock } from 'lucide-react';
 import { useInterview } from '../../contexts/interviewContext';
@@ -7,12 +7,16 @@ import Button from '../ui/Button';
 import { Card, CardContent, CardHeader } from '../ui/Card';
 import Badge from '../ui/Badge';
 import LoadingSpinner from '../auth/LoadingSpinner';
+import axios from 'axios';
+import { AiQuestions } from '../../types';
 
 const QuestionSelection: React.FC = () => {
   const { interviewId } = useParams<{ interviewId: string }>();
   const navigate = useNavigate();
   const { currentInvitation, acceptInvitation, isLoading } = useInterview();
   const { problems } = useProblems();
+
+  const [aiProblems, setAiProblems] = useState<AiQuestions[]>();
 
   const [selectionType, setSelectionType] = useState<'dsa' | 'ai' | null>(null);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
@@ -24,10 +28,8 @@ const QuestionSelection: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  // Get unique topics from problems
-  const allTopics = Array.from(new Set(problems.flatMap(p => p.topics)));
+  const allTopics = (currentInvitation?.topics)?.split(',').map(topic => topic.trim()) || [];
 
-  // Filter problems based on search and filters
   const filteredProblems = problems.filter(problem => {
     const matchesSearch = problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          problem.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -45,13 +47,91 @@ const QuestionSelection: React.FC = () => {
     );
   };
 
-  const handleTopicToggle = (topic: string) => {
-    setAiTopics(prev =>
-      prev.includes(topic)
-        ? prev.filter(t => t !== topic)
-        : [...prev, topic]
-    );
+  const query = `
+Generate a list of 10 unique coding problems based on arrays — 3 from Easy, 4 from Medium, and 3 from Hard levels. Ensure **no problem repeats from the last 5 problems previously generated**.
+
+From these 10:
+- 5 should be inspired by classic FAANG interview problems.
+- 5 should be from highly rated LeetCode array problems (but not the same ones used previously).
+
+Don't include the below questions in the output:
+
+${localStorage.getItem('aiQuestions')}
+
+Strictly return this JSON format for each problem:
+{
+  "problemId": "<unique string>",
+  "title": "<problem title>",
+  "difficulty": "<difficulty level>",
+  "description": "<problem statement>",
+  "inputFormat": "<input format>",
+  "outputFormat": "<output format>",
+  "constraints": "<constraints>",
+  "sampleInput": "<sample input>",
+  "sampleOutput": "<sample output>",
+  "testcases": "<five test cases in CodeChef format — include number of test cases as the first input line. Inputs and outputs should be space separated.>",
+  "outputs": "<five outputs corresponding to the test cases>"
+}
+
+**Rules:**
+- No repetition of problem statements from the last 5 generated problems.
+- Do not explain anything — return only JSON.
+- All testcases should cover possible edge cases.
+- Testcases should follow CodeChef style: first line number of test cases, then subsequent inputs.
+- Do not wrap the JSON in code fences.
+- Problems should be of varied types: sorting, prefix sums, sliding windows, searching, etc.
+
+Return the JSON list of exactly 10 problems as described.
+
+`
+
+  const getQuestions = async () => {
+    if (!interviewId || !selectionType) return;
+
+    try {
+      setSubmitting(true);
+
+      const data = await axios.post('/gemini/generate', {
+        prompt: query}
+      )
+      const dirtyJson = data.data.candidates[0].content.parts[0].text;
+      const cleanJson = dirtyJson.replace(/^```json\n/, '').replace(/\n```$/, '');
+      const questionsList: AiQuestions[] = JSON.parse(cleanJson)
+      console.log(questionsList)
+
+      const titles = questionsList.map(q => q.title);
+      localStorage.setItem('aiQuestions', JSON.stringify(titles));
+      console.log(localStorage.getItem('aiQuestions'));
+
+      setAiProblems(questionsList);
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    console.log('Selected Questions:', selectedQuestions);
+  },selectedQuestions);  
+  const handleAiSubmit = async () => {
+    if (!interviewId || !selectionType) return;
+    try{
+      setSubmitting(true);
+      const acceptData = {
+        interviewId,
+        selectedQuestions: aiProblems?.map(problem => problem.problemId) || []
+      };
+
+      await acceptInvitation(acceptData);
+      setShowConfirmation(true);
+    }
+    catch (error) {
+      console.error('Error accepting invitation:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   const handleSubmit = async () => {
     if (!interviewId || !selectionType) return;
@@ -61,11 +141,7 @@ const QuestionSelection: React.FC = () => {
       
       const acceptData = {
         interviewId,
-        questionSelectionType: selectionType,
-        ...(selectionType === 'dsa' 
-          ? { selectedQuestions }
-          : { aiPrompt, topics: aiTopics }
-        )
+        selectedQuestions
       };
 
       await acceptInvitation(acceptData);
@@ -343,46 +419,23 @@ const QuestionSelection: React.FC = () => {
           </div>
 
           <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Customize Your Questions
-              </h3>
-            </CardHeader>
             <CardContent className="space-y-6">
-              {/* AI Prompt */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Describe the type of questions you want
-                </label>
-                <textarea
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="e.g., Focus on medium difficulty array and string problems suitable for a 45-minute interview..."
-                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                  rows={4}
-                />
-              </div>
 
-              {/* Topic Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Select Topics (optional)
+                  Topics Scope
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {allTopics.map(topic => {
-                    const isSelected = aiTopics.includes(topic);
                     return (
-                      <button
+                      <div
                         key={topic}
-                        onClick={() => handleTopicToggle(topic)}
-                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                          isSelected
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        className={`px-3 py-1 rounded-full text-sm transition-colors 
+                            'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                         }`}
                       >
                         {topic}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -408,16 +461,72 @@ const QuestionSelection: React.FC = () => {
               {/* Submit Button */}
               <div className="flex justify-end">
                 <Button
-                  onClick={handleSubmit}
+                  onClick={getQuestions}
                   isLoading={submitting}
                   icon={<Sparkles size={16} />}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
-                  Generate Questions & Accept Invitation
+                  Generate Questions
                 </Button>
               </div>
             </CardContent>
           </Card>
+
+          <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
+            {aiProblems?.map(problem => {
+              const isSelected = selectedQuestions.includes(problem.problemId);
+              const difficultyVariant = {
+                Easy: 'success',
+                Medium: 'warning',
+                Hard: 'danger',
+              }[problem.difficulty] as 'success' | 'warning' | 'danger';
+
+              return (
+                <Card 
+                  key={problem.problemId}
+                  className={`cursor-pointer transition-all duration-200 ${
+                    isSelected 
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' 
+                      : 'hover:shadow-md'
+                  }`}
+                  onClick={() => handleQuestionToggle(problem.problemId)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {problem.title}
+                          </h3>
+                          <Badge variant={difficultyVariant} size="sm">
+                            {problem.difficulty}
+                          </Badge>
+                          {isSelected && (
+                            <CheckCircle className="w-5 h-5 text-indigo-600" />
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          {problem.description.substring(0, 150)}...
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              onClick={handleAiSubmit}
+              disabled={selectedQuestions.length === 0 || submitting}
+              isLoading={submitting}
+              icon={<ArrowRight size={16} />}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              Accept Invitation ({selectedQuestions.length} questions)
+            </Button>
+          </div>
         </div>
       )}
 

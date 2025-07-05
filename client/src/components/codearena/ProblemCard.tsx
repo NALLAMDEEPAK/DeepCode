@@ -8,9 +8,10 @@ import { Problem } from "../../types";
 interface ProblemCardProps {
   problem: Problem;
   topic: string;
+  isSolved: boolean;
 }
 
-const ProblemCard: React.FC<ProblemCardProps> = ({ problem, topic }) => {
+const ProblemCard: React.FC<ProblemCardProps> = ({ problem, topic, isSolved }) => {
   const difficultyVariant = {
     Easy: "success",
     Medium: "warning",
@@ -26,7 +27,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({ problem, topic }) => {
       <Badge variant={difficultyVariant} size="sm">
         {problem.difficulty}
       </Badge>
-      <div className="flex space-x-1">
+      <div className="flex space-x-3">
         {problem.youtubeUrl && (
           <a
             href={problem.youtubeUrl}
@@ -37,6 +38,11 @@ const ProblemCard: React.FC<ProblemCardProps> = ({ problem, topic }) => {
           >
             <Youtube size={18} />
           </a>
+        )}
+        {isSolved && (
+                <div className="flex items-center text-sm font-medium text-green-600">
+                Solved
+              </div>
         )}
       </div>
     </div>

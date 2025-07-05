@@ -18,6 +18,20 @@ export interface Problem {
     constraints?: string[];
 }
 
+export interface AiQuestions{
+  problemId: string;
+  title: string;
+  difficulty: string;
+  description: string;
+  inputFormat: string;
+  outputFormat: string;
+  constraints: string;
+  sampleInput: string;
+  sampleOutput: string;
+  testcases: string;
+  outputs: string;
+}
+
 export interface Interview {
   id: string;
   title: string;
