@@ -75,6 +75,24 @@ export class UserService {
     }
   }
 
+  async getSolvedProblems(userId: string): Promise<any[]> {
+    try {
+      const result = await this.tursoClient.execute({
+        sql: 'SELECT * FROM user_solved_problems WHERE user_id = ?',
+        args: [userId]
+      });
+
+      return result.rows.map(row => ({
+        problemId: (row as any).problem_id,
+        difficulty: (row as any).difficulty,
+        solvedAt: (row as any).solved_at,
+      }));
+    } catch (error) {
+      console.error('Error fetching solved problems:', error);
+      throw error;
+    }
+  }
+
   async getUserStats(userId: string): Promise<UserStats> {
     try {
       const result = await this.tursoClient.execute({
@@ -95,11 +113,11 @@ export class UserService {
       } else {
         const defaultStats = {
           userId,
-          easy: 193,
-          medium: 336,
-          hard: 55,
-          totalSolved: 584,
-          attempting: 15,
+          easy: 0,
+          medium: 0,
+          hard: 0,
+          totalSolved: 0,
+          attempting: 0,
         };
 
         await this.tursoClient.execute({

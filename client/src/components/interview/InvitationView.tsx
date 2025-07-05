@@ -30,11 +30,11 @@ const InvitationView: React.FC = () => {
         navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname)}`);
       }
     }
+    console.log(currentInvitation?.topics)
   }, [isAuthenticated, authLoading, currentInvitation, navigate]);
 
   const handleAccept = () => {
     if (currentInvitation) {
-      // Navigate to question selection page
       navigate(`/interview/questions/${currentInvitation.id}`);
     }
   };

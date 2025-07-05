@@ -8,7 +8,6 @@ import CodeArena from "./components/codearena/CodeArena";
 import TopicProblems from "./components/codearena/TopicProblems";
 import Problem from "./components/codearena/Problem";
 import MockArena from "./components/mockarena/MockArena";
-import Interview from "./components/mockarena/Interview";
 import InterviewRoom from "./components/mockarena/InterviewRoom";
 import InvitationView from "./components/interview/InvitationView";
 import QuestionSelection from "./components/interview/QuestionSelection";
@@ -45,15 +44,12 @@ function App() {
           <InterviewProvider>
             <BrowserRouter>
               <Routes>
-                {/* Public routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/auth/success" element={<AuthSuccess />} />
                 <Route path="/auth/error" element={<AuthError />} />
                 
-                {/* Interview invitation route (public but requires auth check) */}
                 <Route path="/interview/invitation/:token" element={<InvitationView />} />
                 
-                {/* Protected routes with Layout */}
                 <Route path="/" element={
                   <ProtectedRoute>
                     <Layout>
@@ -93,16 +89,8 @@ function App() {
                     </Layout>
                   </ProtectedRoute>
                 } />
+              
                 
-                <Route path="/mock-arena/interview/:id" element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Interview />
-                    </Layout>
-                  </ProtectedRoute>
-                } />
-                
-                {/* Settings route */}
                 <Route path="/settings" element={
                   <ProtectedRoute>
                     <Layout>
@@ -111,7 +99,6 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                {/* Question selection route */}
                 <Route path="/interview/questions/:interviewId" element={
                   <ProtectedRoute>
                     <Layout>
@@ -120,7 +107,6 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                {/* Full-screen interview room without Layout */}
                 <Route path="/mock-arena/room/:id" element={
                   <ProtectedRoute>
                     <InterviewRoom />

@@ -7,6 +7,13 @@ import { Request, Response } from 'express';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Get('solved-problems')
+  @UseGuards(JwtAuthGuard)
+  async getSolvedProblems(@Req() req: Request) {
+    const user = req.user as any; 
+    return this.userService.getSolvedProblems(user.googleId);
+  }
+
   @Get('stats')
   @UseGuards(JwtAuthGuard)
   async getUserStats(@Req() req: Request) {

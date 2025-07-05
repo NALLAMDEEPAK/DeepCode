@@ -10,7 +10,7 @@ const TopicProblems: React.FC = () => {
   const decodedTopic = topic ? decodeURIComponent(topic) : "";
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
 
-  const { problems } = useProblems();
+  const { problems, problemsSolved } = useProblems();
 
   const problemsList = problems.filter(
     (problem) =>
@@ -109,6 +109,7 @@ const TopicProblems: React.FC = () => {
         {problemsList.map((problem) => (
           <ProblemCard
             key={problem.id}
+            isSolved={problemsSolved.includes(problem.id)}
             problem={problem}
             topic={decodedTopic}
           />

@@ -240,24 +240,12 @@ export class InterviewService {
 
       let questions = '';
       
-      if (acceptData.questionSelectionType === 'dsa') {
-        // Handle DSA question selection
+      if (acceptData) {
         if (!acceptData.selectedQuestions || acceptData.selectedQuestions.length === 0) {
           throw new BadRequestException('Please select at least one question');
         }
         questions = JSON.stringify({
-          type: 'dsa',
           questionIds: acceptData.selectedQuestions
-        });
-      } else if (acceptData.questionSelectionType === 'ai') {
-        // Handle AI question generation
-        const aiQuestions = await this.generateAIQuestions(
-          acceptData.aiPrompt || interview.topics,
-          acceptData.topics || []
-        );
-        questions = JSON.stringify({
-          type: 'ai',
-          questions: aiQuestions
         });
       }
 

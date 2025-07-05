@@ -9,7 +9,7 @@ import axios from "axios";
 import { useProblems } from "../../contexts/problemsContext";
 
 const Problem = () => {
-  const { problems } = useProblems();
+  const { problems, problemsSolved } = useProblems();
   const { topic, id } = useParams();
   const [activeTab, setActiveTab] = useState<"problem" | "solution" | "submissions">("problem");
   const [problem, setProblem] = useState(problems.find((p) => p.id === id));
@@ -43,13 +43,16 @@ const Problem = () => {
       java: "java",
     }[newLanguage];
     const data = {
+      problemId: problem?.id,
+      difficulty: problem?.difficulty,
+      isInterView: false,
       code: code,
       langType: langType,
       timeout: 2,
       inputLines: 2
     }
     setActiveTab("submissions");
-    axios.post('https://api.deepcode-server.xyz/submit-code', data).then(({data: res}) => {
+    axios.post(process.env.NODE_ENV === 'production' ? 'https://api.deepcode-server.xyz/submit-code' : '/submit-code', data).then(({data: res}) => {
       if ("isCompilerError" in res && res.isCompilerError !== "") {
         setCompilerError(res.isCompilerError);
         setSubmitStatus("isCompilerError");
@@ -344,7 +347,14 @@ const Problem = () => {
                   <Code2 size={16} className="mr-2" />
                   Submissions
                 </button>
+            {problemsSolved.includes(id ?? '') && (
+              <div className="ml-auto flex items-center px-4 py-3 text-sm font-medium text-green-600">
+                Solved
               </div>
+            )}
+              </div>
+
+
             </div>
 
             <CardContent className="p-6 overflow-y-auto flex-1">

@@ -53,10 +53,7 @@ interface InterviewContextType {
 
 export interface AcceptInvitationData {
   interviewId: string;
-  questionSelectionType: 'dsa' | 'ai';
   selectedQuestions?: string[];
-  aiPrompt?: string;
-  topics?: string[];
 }
 
 const InterviewContext = createContext<InterviewContextType | undefined>(undefined);
@@ -95,7 +92,6 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({ children }
       const response = await axios.post('/interview/accept', data);
       
       if (response.data.success) {
-        // Update invitation status
         if (currentInvitation) {
           setCurrentInvitation({
             ...currentInvitation,

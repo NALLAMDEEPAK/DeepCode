@@ -1,15 +1,44 @@
-import { Controller, Post, Body, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, HttpException, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { createClient } from '@libsql/client';
+import { Request } from 'express';
 
 @Controller()
 export class SubmitCodeController {
-  constructor(private readonly httpService: HttpService) {}
+  private readonly tursoClient;
+  constructor(private readonly httpService: HttpService) {
+    this.tursoClient = createClient({
+      url: process.env.USER_DATA_DB ?? '',
+      authToken: process.env.TURSO_AUTH_TOKEN ?? '',
+    });
+    this.initializeDatabase();
+  }
+
+  private async initializeDatabase() {
+    try {
+      await this.tursoClient.execute(`
+        CREATE TABLE IF NOT EXISTS user_solved_problems (
+          user_id TEXT NOT NULL,
+          problem_id TEXT NOT NULL,
+          difficulty TEXT NOT NULL,
+          solved_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          language TEXT,
+          solution_code TEXT,
+          UNIQUE(user_id, problem_id)
+        )`
+      );
+      console.log('Database initialized successfully');
+    } catch (error) {
+      console.error('Error initializing database:', error);
+    }
+  }
 
   @Post('/submit-code')
   @UseGuards(JwtAuthGuard) // Protect this route with authentication
-  async runCode(@Body() body: any): Promise<Record<string, any>> {
+  async runCode(@Req() req: Request, @Body() body: any): Promise<Record<string, any>> {
+    const userId = (req.user as any).googleId;
     const prependCode = `import signal
 def handler(signum, frame):
     raise TimeoutError("Time Limit Exceeded")
@@ -66,7 +95,7 @@ for _ in range(q):
     }
 
     console.log(inputs)
-    function formatSubmitResponse(res: string, error: string){
+    const formatSubmitResponse = async (res: string, error: string) => {
         const actuals: string[] = res.split('\n');
         const expected: string[] = ['0 1', '1 2', '0 2']
         const n = expected.length;
@@ -84,6 +113,23 @@ for _ in range(q):
                 };
             }
         }
+        if (!body.isInterView) {
+        await this.tursoClient.execute({
+          sql: `
+            INSERT INTO user_solved_problems (user_id, problem_id, difficulty, solved_at, language, solution_code)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `,
+          args: [
+            userId,
+            body.problemId,
+            body.difficulty,
+            new Date().toISOString(),
+            body.langType,
+            body.code
+          ]
+        });
+        console.log('Problem submission recorded successfully');
+      }
         return {
             status: 200,
             passed: n,
@@ -96,7 +142,7 @@ for _ in range(q):
       const response = await firstValueFrom(
         this.httpService.post(url, data, { headers })
       );
-      const res = formatSubmitResponse(response.data.output, response.data.error)
+      const res = await formatSubmitResponse(response.data.output, response.data.error)
       return res;
     } catch (error) {
       console.error('Error executing code:', error);

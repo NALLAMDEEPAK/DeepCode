@@ -12,9 +12,10 @@ import { InterviewModule } from './interview/interview.module';
 import { EmailModule } from './email/email.module';
 import { UserModule } from './user/user.module';
 import { VideocallModule } from './videocall/videocall.module';
+import {GeminiModule}  from  './gen-questions/gen-questions.module'
 
 @Module({
-  imports: [RunCodeModule, SubmitCodeModule, DsaListModule, AuthModule, InterviewModule, EmailModule, UserModule, VideocallModule],
+  imports: [RunCodeModule, SubmitCodeModule, DsaListModule, AuthModule, InterviewModule, EmailModule, UserModule, VideocallModule, GeminiModule],
   controllers: [AppController, HealthController, DsaListController],
   providers: [AppService, DsaListService],
 })
